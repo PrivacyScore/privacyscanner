@@ -140,7 +140,7 @@ def print_master_config(args):
             modules_topology[module_name] = index
     output = '# Scan modules with topological dependency order index.\n'
     output += '# Run the following to obtain this configuration value:\n'
-    output += '# privacyscanner print_scan_modules --config yourconfig.py\n'
+    output += '# privacyscanner print_master_config --config yourconfig.py\n'
     output += 'SCAN_MODULES = {}'.format(pprint.pformat(modules_topology, indent=4))
     print(output)
 
