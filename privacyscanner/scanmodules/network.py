@@ -26,11 +26,70 @@ MINIMUM_SIMILARITY = 0.90
 
 
 def scan_site(result, logger, options):
-    """Test the specified URL with GeoIP."""
-
     # determine hostname
     hostname = urlparse(result['site_url']).hostname
 
+    _insert_dns_records(result, logger, options, hostname)
+    _insert_geoip(result, logger, options)
+
+    result['reachable'] = True
+
+    # Note: If you ask for a A record, but there is only a CNAME record,
+    # the DNS resolver will also return the A record which is referenced
+    # by the CNAME, i.e. result['a_records'] won't be empty if there is
+    # only a CNAME referring to an A record (see RFC 1034).
+    if not result['a_records']:
+        result['dns_error'] = True
+        result['reachable'] = False
+        return
+
+    # Determine final URL. The final URL is the URL that is retrieved
+    # after some optional redirects when retrieving the site url.
+    final_url = result['site_url']
+    try:
+        final_url, final_url_content = _retrieve_url(result['site_url'])
+    except requests.exceptions.HTTPError as e:
+        result['reachable'] = False
+        result['http_error'] = str(e)
+        final_url_content = e.response.content
+    except requests.exceptions.RequestException as e:
+        logger.exception('Failed to retrieve URL')
+        result['reachable'] = False
+        return
+    finally:
+        result['final_url'] = final_url
+
+
+    final_url_is_https = final_url.startswith('https://')
+    result['final_url_is_https'] = final_url_is_https
+
+    # If our final URL is already HTTPS, we have nothing to do and just
+    # set is as HTTPS-URL. Otherwise we fetch the site again with HTTPS
+    # and compare it to the HTTP version later on using Jaccard index
+    # similarity
+    if final_url_is_https:
+        result['final_https_url'] = result['final_url']
+    else:
+        https_url = 'https:/' + result['site_url'].split('/', maxsplit=1)[1]
+        try:
+            final_https_url, final_https_url_content = _retrieve_url(https_url)
+            result['final_https_url'] = final_https_url
+        except requests.exceptions.HTTPError as e:
+            result['https_error'] = str(e)
+            result['final_https_url'] = https_url
+            final_https_url_content = e.response.content
+        except requests.exceptions.RequestException:
+            result['final_https_url'] = None
+            return
+        else:
+            similarity = _jaccard_index(
+                final_url_content,
+                final_https_url_content)
+            minimum_similarity = options.get('minimum_similarity', MINIMUM_SIMILARITY)
+            result['same_content_via_https'] = similarity > minimum_similarity
+
+
+def _insert_dns_records(result, logger, options, hostname):
     # DNS
     # CNAME records
     result['cname_records'] = _cname_lookup(hostname)
@@ -54,45 +113,8 @@ def scan_site(result, logger, options):
         (pref, [_reverse_lookup(a) for a in mx_a])
         for pref, mx_a in result['mx_a_records']]
 
-    result['reachable'] = True
 
-    if not result['a_records']:
-        result['dns_error'] = True
-        result['reachable'] = False
-    else:
-        # determine final URL
-        try:
-            final_url, final_url_content, http_error = _retrieve_url(result['site_url'])
-            if http_error:
-                result['http_error'] = http_error
-                result['final_url'] = result['site_url'] # so that we can check the HTTPS version below
-            else:
-                result['final_url'] = final_url
-
-        except requests.exceptions.Timeout:
-            # TODO: extend api to support registration of partial errors
-            logger.exception('Failed to retrieve URL')
-            result['final_url'] = result['site_url']
-            result['reachable'] = False
-            return
-
-        # now let's check the HTTPS version again (unless we already have been redirected there)
-        if not result['final_url'].startswith('https'):
-            https_url = 'https:/' + result['site_url'].split('/', maxsplit=1)[1]
-            try:
-
-                final_https_url, final_https_url_content, https_error = _retrieve_url(https_url)
-
-                if https_error:
-                    result['https_error'] = https_error
-                    result['final_https_url'] = https_url
-                else:
-                    result['final_https_url'] = final_https_url
-            except requests.exceptions.Timeout:
-                result['final_https_url'] = None
-        else:
-            result['final_https_url'] = result['final_url']
-
+def _insert_geoip(result, logger, options):
     # GeoIP
     reader = Reader(options.get('country_database_path'))
 
@@ -101,31 +123,14 @@ def scan_site(result, logger, options):
         (ip for mx_a_records in result['mx_a_records']
          for ip in mx_a_records[1]), reader)
 
-    result['final_url_is_https'] = (
-        'final_url' in result and result['final_url'].startswith('https'))
-    # handle non-https final url
-    if (not result['final_url_is_https'] and
-            'final_url_content' in result and
-            'final_https_url_content' in result):
-        similarity = _jaccard_index(
-            result['final_url_content'],
-            result['final_https_url_content'])
-        minimum_similarity = options.get('minimum_similarity', MINIMUM_SIMILARITY)
-        result['same_content_via_https'] = similarity > minimum_similarity
-
 
 def _retrieve_url(url):
     headers = {
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:53.0) Gecko/20100101 Firefox/53.0'
     }
-    http_error = None
-
     r = requests.get(url, headers=headers, verify=False)
-
-    if r.status_code != requests.codes.ok:
-        http_error = '{} {}'.format(r.status_code, r.reason)
-
-    return r.url, r.content, http_error
+    r.raise_for_status()
+    return r.url, r.content
 
 
 def _a_lookup(name: str) -> List[str]:
