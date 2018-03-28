@@ -101,8 +101,6 @@ def scan_site(result, logger, options):
         (ip for mx_a_records in result['mx_a_records']
          for ip in mx_a_records[1]), reader)
 
-    # TODO: reverse mx-a matches mx
-
     result['final_url_is_https'] = (
         'final_url' in result and result['final_url'].startswith('https'))
     # handle non-https final url
