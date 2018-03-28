@@ -1,20 +1,16 @@
 [[source]]
-
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
-
 [dev-packages]
 
-
-
 [packages]
-
 "psycopg2-binary" = "*"
 toposort = "*"
-
+dnspython = "*"
+"geoip2" = "*"
+requests = "*"
 
 [requires]
-
 python_version = "3.6"
