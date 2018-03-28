@@ -80,7 +80,7 @@ def scan_site(args):
         raise CommandError('Could not create results directory: {}'.format(e)) from e
 
     result_file = results_dir / 'results.json'
-    result_json = {'site': args.site}
+    result_json = {'site_url': args.site}
     if args.import_results:
         try:
             with open(args.import_results) as f:
