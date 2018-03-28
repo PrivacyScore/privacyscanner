@@ -22,10 +22,13 @@ class Result(object):
 
     def __getitem__(self, key):
         return self._result_dict[key]
-    
+
     def __setitem__(self, key, value):
         self.mark_dirty(key)
         self._result_dict[key] = value
+
+    def __contains__(self, key):
+        return key in self._result_dict
 
     def get(self, key, d=None):
         return self._result_dict.get(key, d)
