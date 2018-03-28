@@ -119,10 +119,14 @@ def _retrieve_url(url):
     headers = {
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:53.0) Gecko/20100101 Firefox/53.0'
     }
+    http_error = None
 
     r = requests.get(url, headers=headers, verify=False)
 
-    return r.url, r.content, '{} {}'.format(r.status_code, r.reason)
+    if r.status_code != requests.codes.ok:
+        http_error = '{} {}'.format(r.status_code, r.reason)
+
+    return r.url, r.content, http_error
 
 def _a_lookup(name: str) -> List[str]:
     try:
