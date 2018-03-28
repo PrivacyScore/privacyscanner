@@ -41,7 +41,7 @@ def scan_site(result, logger, options):
     # MX records
     result['mx_records'] = _mx_lookup(hostname)
     if hostname.startswith('www.'):
-        result['mx_result'] += _mx_lookup(hostname[4:])
+        result['mx_records'] += _mx_lookup(hostname[4:])
 
     # A records for MX
     result['mx_a_records'] = [(pref, _a_lookup(mx)) for pref, mx in result['mx_records']]
