@@ -4,10 +4,12 @@ addresses and the final URL after following any HTTP forwards.
 """
 
 import re
+import warnings
 from typing import List, Iterable, Tuple
 from urllib.parse import urlparse
 
 import requests
+import urllib3
 from dns import resolver, reversename
 from dns.exception import DNSException
 from geoip2.database import Reader
@@ -129,7 +131,10 @@ def _retrieve_url(url):
     headers = {
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:53.0) Gecko/20100101 Firefox/53.0'
     }
-    r = requests.get(url, headers=headers, verify=False)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', urllib3.exceptions.InsecureRequestWarning)
+        r = requests.get(url, headers=headers, verify=False)
     r.raise_for_status()
     return r.url, r.content
 
