@@ -111,8 +111,8 @@ def scan_site(result, logger, options):
             'final_url_content' in result and
             'final_https_url_content' in result):
         similarity = _jaccard_index(
-            result['final_url_content']
-            result['final_https_url_content']
+            result['final_url_content'],
+            result['final_https_url_content'])
         minimum_similarity = options.get('minimum_similarity', MINIMUM_SIMILARITY)
         result['same_content_via_https'] = similarity > minimum_similarity
 
