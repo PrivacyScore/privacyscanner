@@ -118,8 +118,9 @@ def _insert_geoip(result, logger, options):
     # GeoIP
     reader = Reader(options.get('country_database_path'))
 
-    result['a_locations'] = _get_countries(result['a_records'], reader)
-    result['mx_locations'] = _get_countries(
+    result['a_locations'], result['a_locations_unknown'] = _get_countries(
+        result['a_records'], reader)
+    result['mx_locations'], result['mx_locations_unknown'] = _get_countries(
         (ip for mx_a_records in result['mx_a_records']
          for ip in mx_a_records[1]), reader)
 
@@ -164,8 +165,9 @@ def _reverse_lookup(ip: str) -> List[str]:
         return []
 
 
-def _get_countries(addresses: Iterable[str], reader: Reader) -> List[str]:
-    res = set()
+def _get_countries(addresses: Iterable[str], reader: Reader) -> Tuple[List[str], List[str]]:
+    locations = set()
+    unresolved_ips = set()
     for ip in addresses:
         try:
             geoip_result = reader.country(ip)
@@ -174,11 +176,11 @@ def _get_countries(addresses: Iterable[str], reader: Reader) -> List[str]:
                 this_result = geoip_result.continent.name
             if not this_result:
                 raise AddressNotFoundError
-            res.add(this_result)
+            locations.add(this_result)
         except AddressNotFoundError:
-            # TODO: Add entry specifying that at least one location has not been found
+            unresolved_ips.add(ip)
             continue
-    return list(res)
+    return list(locations), list(unresolved_ips)
 
 
 def _jaccard_index(a: bytes, b: bytes) -> float:
