@@ -51,9 +51,8 @@ def scan_site(result, logger, options):
 
     # Reverse A for MX
     result['mx_a_records_reverse'] = [
-        (pref,
-         [_reverse_lookup(a) for a in mx_a])
-         for pref, mx_a in result['mx_a_records']]
+        (pref, [_reverse_lookup(a) for a in mx_a])
+        for pref, mx_a in result['mx_a_records']]
 
     result['reachable'] = True
 
