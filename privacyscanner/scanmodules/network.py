@@ -4,7 +4,7 @@ addresses and the final URL after following any HTTP forwards.
 """
 
 import re
-from typing import Dict, List, Union
+from typing import List, Iterable, Tuple
 from urllib.parse import urlparse
 
 import requests
@@ -115,6 +115,7 @@ def scan_site(result, logger, options):
         minimum_similarity = options.get('minimum_similarity', MINIMUM_SIMILARITY)
         result['same_content_via_https'] = similarity > minimum_similarity
 
+
 def _retrieve_url(url):
     headers = {
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:53.0) Gecko/20100101 Firefox/53.0'
@@ -127,6 +128,7 @@ def _retrieve_url(url):
         http_error = '{} {}'.format(r.status_code, r.reason)
 
     return r.url, r.content, http_error
+
 
 def _a_lookup(name: str) -> List[str]:
     try:
@@ -142,10 +144,10 @@ def _cname_lookup(name: str) -> List[str]:
         return []
 
 
-def _mx_lookup(name: str) -> List[str]:
+def _mx_lookup(name: str) -> Iterable[Tuple[str, str]]:
     try:
-        return sorted([(e.preference, e.exchange.to_text()[:-1].lower())
-                       for e in resolver.query(name, 'MX')], key=lambda v: v[0])
+        return sorted(((e.preference, e.exchange.to_text()[:-1].lower())
+                       for e in resolver.query(name, 'MX')), key=lambda v: v[0])
     except DNSException:
         return []
 
@@ -159,7 +161,7 @@ def _reverse_lookup(ip: str) -> List[str]:
         return []
 
 
-def _get_countries(addresses: List[str], reader: Reader) -> List[str]:
+def _get_countries(addresses: Iterable[str], reader: Reader) -> List[str]:
     res = set()
     for ip in addresses:
         try:
@@ -178,11 +180,11 @@ def _get_countries(addresses: List[str], reader: Reader) -> List[str]:
 
 def _jaccard_index(a: bytes, b: bytes) -> float:
     """Calculate the jaccard similarity of a and b."""
-    pattern = re.compile(rb' |\n')
+    pattern = re.compile(rb'[ \n]')
     # remove tokens containing / to prevent wrong classifications for
     # absolute paths
-    a = set(token for token in pattern.split(a) if b'/' not in token)
-    b = set(token for token in pattern.split(b) if b'/' not in token)
+    a = {token for token in pattern.split(a) if b'/' not in token}
+    b = {token for token in pattern.split(b) if b'/' not in token}
     intersection = a.intersection(b)
     union = a.union(b)
     return len(intersection) / len(union)
