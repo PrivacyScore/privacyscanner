@@ -5,6 +5,7 @@ addresses and the final URL after following any HTTP forwards.
 
 import re
 import warnings
+from pathlib import Path
 from typing import List, Iterable, Tuple
 from urllib.parse import urlparse
 
@@ -118,7 +119,7 @@ def _insert_dns_records(result, logger, options, hostname):
 
 def _insert_geoip(result, logger, options):
     # GeoIP
-    reader = Reader(options.get('country_database_path'))
+    reader = Reader(_get_geoip_database(options))
 
     result['a_locations'], result['a_locations_unknown'] = _get_countries(
         result['a_records'], reader)
@@ -198,3 +199,22 @@ def _jaccard_index(a: bytes, b: bytes) -> float:
     intersection = a.intersection(b)
     union = a.union(b)
     return len(intersection) / len(union)
+
+
+def _get_geoip_database(options):
+    try:
+        return options['country_database_path']
+    except KeyError:
+        possible_paths = [
+            Path('/usr/share/GeoIP/GeoIP.dat'),
+            Path('/usr/local/share/GeoIP/GeoIP.dat'),
+            Path('~/.local/share/GeoIP/GeoIP.dat').expanduser(),
+            Path('/usr/share/GeoIP/GeoLite2-Country.mmdb'),
+            Path('/usr/local/share/GeoIP/GeoLite2-Country.mmdb'),
+            Path('~/.local/share/GeoIP/GeoLite2-Country.mmdb').expanduser(),
+        ]
+        for p in possible_paths:
+            if p.exists():
+                return str(p)
+    raise RuntimeError('Could not find GeoIP database. '
+                       'Please specify country_database_path option.')
