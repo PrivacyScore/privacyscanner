@@ -145,7 +145,7 @@ def scan_site(result, logger, options):
 
         # Identify known trackers
         start_time = timeit.default_timer()
-        result["tracker_requests"] = detect_trackers(result, logger, options, third_party_requests)
+        _insert_detected_trackers(result, logger, options)
         elapsed = timeit.default_timer() - start_time
         result["tracker_requests_elapsed_seconds"] = elapsed
 
@@ -338,10 +338,7 @@ def scan_site(result, logger, options):
                            result["flashcookies"], result["tracker_requests"])
 
         # Detect mixed content
-        mixed_content = detect_mixed_content(logger, result['site_url'], result["https"], cur)
-        # Do not set mixed content key in results if function returned None
-        if mixed_content is not None:
-            result["mixed_content"] = mixed_content
+        _insert_mixed_content_detection(result, logger, options, cur)
 
     # Close SQLite connection
     conn.close()
@@ -388,14 +385,14 @@ def pixelize_screenshot(screenshot, screenshot_pixelized, target_width=390, pixe
     img.save(screenshot_pixelized, format='png')
 
 
-def detect_trackers(result, logger, options, third_parties):
+def _insert_detected_trackers(result, logger, options):
     """
     Detect 3rd party trackers and return a list of them.
 
     :param third_parties: List of third-party requests (not: hosts) to analyze
     :return: a list of unique hosts in the form domain.tld
     """
-    if len(third_parties) == 0:
+    if not result['third_party_requests']:
         return []
 
     blacklist = [re.compile('^[|]*http[s]*[:/]*$'),  # match http[s]:// in all variations
@@ -417,7 +414,7 @@ def detect_trackers(result, logger, options, third_parties):
 
     lines = []
     rules = []
-    result = []
+    trackers = []
 
     start_time = timeit.default_timer()
 
@@ -435,8 +432,8 @@ def detect_trackers(result, logger, options, third_parties):
             rule = line.split('$')[0]
             if is_acceptable_rule(rule):
                 rules.append(rule)
-        except:
-            print("Unexpected error:", sys.exc_info()[0])
+        except Exception:
+            logger.exception('Unexpected error while applying easylist rules.')
 
     abr = AdblockRules(rules)
 
@@ -445,16 +442,15 @@ def detect_trackers(result, logger, options, third_parties):
 
     i = 0
 
-    for url in third_parties:
+    for url in result['third_party_requests']:
         if abr.should_block(url):
             ext = tldextract.extract(url)
-            result.append("{}.{}".format(ext.domain, ext.suffix))
+            trackers.append("{}.{}".format(ext.domain, ext.suffix))
         i = i + 1
         if i % 20 == 0:
             elapsed = timeit.default_timer() - start_time
             logger.info("Checked %i domains, %i secs elapsed..." % (i, elapsed))
-
-    return list(set(result))
+    result['tracker_requests'] = list(set(trackers))
 
 
 def detect_google_analytics(requests):
@@ -486,33 +482,35 @@ def detect_google_analytics(requests):
     return present, anonymized, not_anonymized
 
 
-def detect_mixed_content(logger, url, https, cursor):
+def _insert_mixed_content_detection(result, logger, options, cursor):
     """
     Detect if we have mixed content on the site.
 
-    :param url: initial URL of the website (before forwards etc)
-    :param https: Boolean indicating whether the site uses HTTPS
+    Sets result['mixed_content'] to True iff https == True && at least one
+    mixed content warning was thrown by firefox
+
     :param cursor: An SQLite curser to use
-    :return: True iff https == True && at least one mixed content warning was thrown by firefox
+    :return: True
     """
-    if not https:
-        return False
-    rv = False
+    if not result['https']:
+        result['mixed_content'] = False
+        return
+    has_mixed_content = False
     try:
         # Attempt to load all log entries from the database
-        entries = cursor.execute("SELECT log_json FROM browser_logs WHERE original_url LIKE ?;", (url,))
+        entries = cursor.execute("SELECT log_json FROM browser_logs WHERE original_url LIKE ?;",
+                                 (result['site_url'],))
         # If we get here, the table existed, so mixed content detection should work
         exp = re.compile("mixed .* content \"(.*)\"")
         for entry in entries:
             match = exp.findall(entry[0])
             if match:
-                rv = True
-        return rv
+                has_mixed_content = True
+        result['mixed_content'] = has_mixed_content
     except Exception:
         # Very likely, the database table does not exist, so we may be working on an old database format.
         # Log and ignore, do not make any statements about the existence of mixed content
         logger.exception('Unexpected error when detecting mixed content')
-        return
 
 
 def detect_cookies(domain, cookies, flashcookies, trackers):
