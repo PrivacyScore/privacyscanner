@@ -3,6 +3,7 @@ import multiprocessing
 import os
 import signal
 import sys
+import tempfile
 import time
 import queue
 import socket
@@ -271,15 +272,20 @@ class Worker:
             logger = logging.Logger(job.scan_module.name)
             logger.addHandler(WorkerQueueHandler(self._pid, self._queue))
             logger.addHandler(ScanStreamHandler())
-            try:
-                job.scan_module.scan_site(result, logger, job.options)
-            except Exception:
-                logger.exception('Scan module `{}` failed.'.format(job.scan_module.name))
-                self._job_queue.report_failure()
-                self._notify_master('job_failed', (datetime.today(), ))
-            else:
-                self._job_queue.report_result(result.get_updates())
-                self._notify_master('job_finished', (datetime.today(), ))
+            with tempfile.TemporaryDirectory() as temp_dir:
+                old_cwd = os.getcwd()
+                os.chdir(temp_dir)
+                try:
+                    job.scan_module.scan_site(result, logger, job.options)
+                except Exception:
+                    logger.exception('Scan module `{}` failed.'.format(job.scan_module.name))
+                    self._job_queue.report_failure()
+                    self._notify_master('job_failed', (datetime.today(), ))
+                else:
+                    self._job_queue.report_result(result.get_updates())
+                    self._notify_master('job_finished', (datetime.today(), ))
+                finally:
+                    os.chdir(old_cwd)
             self._max_executions -= 1
 
             # Stop if our master died.

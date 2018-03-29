@@ -2,9 +2,11 @@ import argparse
 import json
 import hashlib
 import logging
+import os
 import pprint
 import string
 import sys
+import tempfile
 from copy import deepcopy
 from urllib.parse import urlparse
 from pathlib import Path
@@ -120,11 +122,16 @@ def scan_site(args):
         logger.addHandler(stream_handler)
         logger.addHandler(file_handler)
         options = config['SCAN_MODULE_OPTIONS'].get(mod.name, {})
-        try:
-            mod.scan_site(result, logger, options)
-        except Exception:
-            logger.exception('Scan module `{}` failed.'.format(mod.name))
-            sys.exit(1)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            old_cwd = os.getcwd()
+            os.chdir(temp_dir)
+            try:
+                mod.scan_site(result, logger, options)
+            except Exception:
+                logger.exception('Scan module `{}` failed.'.format(mod.name))
+                sys.exit(1)
+            finally:
+                os.chdir(old_cwd)
     pprint.pprint(result.get_results())
 
 
