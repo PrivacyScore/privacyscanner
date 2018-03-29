@@ -4,7 +4,7 @@ privacyscanner
 Usage
 -----
 
-See `privacyscore --help`.
+See `privacyscanner --help`.
 
 Development
 -----------
