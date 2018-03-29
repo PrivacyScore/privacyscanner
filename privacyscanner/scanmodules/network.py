@@ -206,10 +206,11 @@ def _get_geoip_database(options):
         return options['country_database_path']
     except KeyError:
         possible_paths = [
-            Path('/var/lib/GeoIP/GeoLite2-Country.mmdb'),
-            Path('/usr/share/GeoIP/GeoLite2-Country.mmdb'),
-            Path('/usr/local/share/GeoIP/GeoLite2-Country.mmdb'),
             Path('~/.local/share/GeoIP/GeoLite2-Country.mmdb').expanduser(),
+            Path('/var/lib/GeoIP/GeoLite2-Country.mmdb'),
+            Path('/usr/local/var/GeoIP/GeoLite2-Country.mmdb'),
+            Path('/usr/local/share/GeoIP/GeoLite2-Country.mmdb'),
+            Path('/usr/share/GeoIP/GeoLite2-Country.mmdb'),
         ]
         for p in possible_paths:
             if p.exists():
