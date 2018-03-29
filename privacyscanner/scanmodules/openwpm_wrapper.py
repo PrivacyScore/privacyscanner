@@ -9,15 +9,14 @@ Thus, this needs to run in a different virtualenv than the backend.
 Syntax: ./openwpm_wrapper.py url scan_dir
 """
 
-import json
 import os
 import re
 import sqlite3
 import sys
 import shutil
 
-from vendor.OpenWPM.automation import TaskManager, CommandSequence
-from vendor.OpenWPM.automation.SocketInterface import clientsocket
+from OpenWPM.automation import TaskManager, CommandSequence
+from OpenWPM.automation.SocketInterface import clientsocket
 
 
 # TODO: Clean up this script
