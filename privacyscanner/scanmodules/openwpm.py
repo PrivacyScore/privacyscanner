@@ -303,7 +303,7 @@ def scan_site(result, logger, options):
                 "SELECT baseDomain, name, value, host, path, expiry, " +
                 "accessed, creationTime, isSecure, isHttpOnly " +
                 "FROM site_visits as s JOIN profile_cookies as c " +
-                "ON s.visit_id = c.visit_id WHERE s.site_url LIKE ?;", (result['site_url'])):
+                "ON s.visit_id = c.visit_id WHERE s.site_url LIKE ?", (result['site_url'], )):
             profilecookie = {
                 'baseDomain': baseDomain,
                 'name': name,
@@ -322,7 +322,7 @@ def scan_site(result, logger, options):
         for domain, filename, local_path, key, content in cur.execute(
                 "SELECT domain, filename, local_path, key, content " +
                 "FROM site_visits as s JOIN flash_cookies as c " +
-                "ON s.visit_id = c.visit_id WHERE s.site_url LIKE ?;", (result['site_url'])):
+                "ON s.visit_id = c.visit_id WHERE s.site_url LIKE ?", (result['site_url'], )):
             flashcookie = {
                 'domain': domain,
                 'filename': filename,
