@@ -49,6 +49,7 @@ def scan_site(result, logger, options):
         'VIRTUAL_ENV': virtualenv_path,
         'PATH': '{}:{}'.format(
             os.path.join(virtualenv_path, 'bin'), os.environ.get('PATH')),
+        'PYTHONPATH': options['openwpm_path']
     })
 
     # collect raw output
