@@ -125,6 +125,7 @@ def scan_site(args):
         with tempfile.TemporaryDirectory() as temp_dir:
             old_cwd = os.getcwd()
             os.chdir(temp_dir)
+            logger.info('Starting {}'.format(mod.name))
             try:
                 mod.scan_site(result, logger, options)
             except Exception:
@@ -132,6 +133,7 @@ def scan_site(args):
                 sys.exit(1)
             finally:
                 os.chdir(old_cwd)
+            logger.info('Finished {}'.format(mod.name))
     pprint.pprint(result.get_results())
 
 
