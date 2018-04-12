@@ -107,12 +107,15 @@ def scan_site(result, logger, options):
         # collect third parties (i.e. domains that differ in their second and third level domain
         third_parties = []
         third_party_requests = []
-        extracted_visited_url = tldextract.extract(result['final_url'])
-        maindomain_visited_url = "{}.{}".format(extracted_visited_url.domain, extracted_visited_url.suffix)
+        non_thirdparty_domains = set()
+        for url in (result['site_url'], result['final_url']):
+            extracted_url = tldextract.extract(url)
+            non_third_party_domain = "{}.{}".format(extracted_url.domain, extracted_url.suffix)
+            non_thirdparty_domains.add(non_third_party_domain)
 
         # TODO: the following line results in urls starting with a dot
         # TODO: the following line is not even used actually
-        hostname_visited_url = '.'.join(e for e in extracted_visited_url if e)
+        hostname_visited_url = '.'.join(e for e in extracted_url if e)
 
         openwpm_requests = []
         for requrl, method, referrer, headers in cur.execute(
@@ -131,7 +134,7 @@ def scan_site(result, logger, options):
             extracted = tldextract.extract(requrl)
             maindomain = "{}.{}".format(extracted.domain, extracted.suffix)
             hostname = '.'.join(e for e in extracted if e)
-            if maindomain_visited_url != maindomain:
+            if maindomain not in non_thirdparty_domains:
                 third_parties.append(hostname)  # add full domain to list
                 third_party_requests.append(requrl)  # add full domain to list
         result['requests'] = openwpm_requests
