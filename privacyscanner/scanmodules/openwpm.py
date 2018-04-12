@@ -241,62 +241,62 @@ def scan_site(result, logger, options):
                           headers_dict.items()}  # lowercase keys, allows for case-insensitive lookup
 
             # Content-Security-Policy
-            result = {'value': '', 'status': 'MISSING'}
+            header_result = {'value': '', 'status': 'MISSING'}
             if 'content-security-policy' in headers_lc.keys():
-                result['value'] = headers_lc['content-security-policy']
-                result['status'] = "INFO"
-            result['headerchecks']['content-security-policy'] = result
+                header_result['value'] = headers_lc['content-security-policy']
+                header_result['status'] = "INFO"
+            result['headerchecks']['content-security-policy'] = header_result
 
             # X-Frame-Options
-            result = {'value': '', 'status': 'MISSING'}
+            header_result = {'value': '', 'status': 'MISSING'}
             if 'x-frame-options' in headers_lc.keys():
-                result['value'] = headers_lc['x-frame-options']
-                result['status'] = "INFO"
-            result['headerchecks']['x-frame-options'] = result
+                header_result['value'] = headers_lc['x-frame-options']
+                header_result['status'] = "INFO"
+            result['headerchecks']['x-frame-options'] = header_result
 
             # X-XSS-Protection
-            result = {'value': '', 'status': 'MISSING'}
+            header_result = {'value': '', 'status': 'MISSING'}
             if 'x-xss-protection' in headers_lc.keys():
-                result['value'] = headers_lc['x-xss-protection']
-                if result['value'] == '1; mode=block':
-                    result['status'] = "OK"
+                header_result['value'] = headers_lc['x-xss-protection']
+                if header_result['value'] == '1; mode=block':
+                    header_result['status'] = "OK"
                 else:
-                    result['status'] = "INFO"
-            result['headerchecks']['x-xss-protection'] = result
+                    header_result['status'] = "INFO"
+            result['headerchecks']['x-xss-protection'] = header_result
 
             # X-Content-Type-Options
-            result = {'value': '', 'status': 'MISSING'}
+            header_result = {'value': '', 'status': 'MISSING'}
             if 'x-content-type-options' in headers_lc.keys():
-                result['value'] = headers_lc['x-content-type-options']
-                if result['value'] == 'nosniff':
-                    result['status'] = "OK"
+                header_result['value'] = headers_lc['x-content-type-options']
+                if header_result['value'] == 'nosniff':
+                    header_result['status'] = "OK"
                 else:
-                    result['status'] = "WARN"
-            result['headerchecks']['x-content-type-options'] = result
+                    header_result['status'] = "WARN"
+            result['headerchecks']['x-content-type-options'] = header_result
 
             # Referrer-Policy
-            result = {'value': '', 'status': 'MISSING'}
+            header_result = {'value': '', 'status': 'MISSING'}
             if 'referrer-policy' in headers_lc.keys():
-                result = {'key': 'referrer-policy', 'value': headers_lc['referrer-policy']}
+                header_result = {'key': 'referrer-policy', 'value': headers_lc['referrer-policy']}
                 if headers_lc['referrer-policy'] == 'no-referrer':
-                    result['status'] = "OK"
+                    header_result['status'] = "OK"
                 else:
-                    result['status'] = "WARN"
-            result['headerchecks']['referrer-policy'] = result
+                    header_result['status'] = "WARN"
+            result['headerchecks']['referrer-policy'] = header_result
 
             # X-Powered-By
-            result = {'value': '', 'status': 'MISSING'}
+            header_result = {'value': '', 'status': 'MISSING'}
             if 'x-powered-by' in headers_lc.keys():
-                result['value'] = headers_lc['x-powered-by']
-                result['status'] = "INFO"
-            result['headerchecks']['x-powered-by'] = result
+                header_result['value'] = headers_lc['x-powered-by']
+                header_result['status'] = "INFO"
+            result['headerchecks']['x-powered-by'] = header_result
 
             # Server
-            result = {'value': '', 'status': 'MISSING'}
+            header_result = {'value': '', 'status': 'MISSING'}
             if 'server' in headers_lc.keys():
-                result['value'] = headers_lc['server']
-                result['status'] = "INFO"
-            result['headerchecks']['server'] = result
+                header_result['value'] = headers_lc['server']
+                header_result['status'] = "INFO"
+            result['headerchecks']['server'] = header_result
 
         # Cookies
         for baseDomain, name, value, host, path, expiry, accessed, creationTime, isSecure, isHttpOnly in cur.execute(
