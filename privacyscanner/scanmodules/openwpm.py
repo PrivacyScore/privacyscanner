@@ -420,11 +420,11 @@ def _get_detected_trackers(third_party_requests, logger, options):
     start_time = timeit.default_timer()
 
     # Generate paths to files
-    easylist_base_path = Path(options['easylist_base_path'])
+    easylist_path = Path(options['easylist_path'])
     easylist_files = ['easylist.txt', 'easyprivacy.txt', 'fanboy-annoyance.txt']
 
     for easylist_file in easylist_files:
-        for line in (easylist_base_path / easylist_file).open('r', encoding='utf-8'):
+        for line in (easylist_path / easylist_file).open('r', encoding='utf-8'):
             lines.append(line)
 
     # Clean up lines:
