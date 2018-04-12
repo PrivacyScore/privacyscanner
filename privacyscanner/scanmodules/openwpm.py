@@ -71,7 +71,7 @@ def scan_site(result, logger, options):
     # html source
     if os.path.isfile('sources/source.html'):
         with open('sources/source.html', 'rb') as f:
-            result.add_debug_file(f)
+            result.add_debug_file('source.html', f)
 
     # cropped and pixelized screenshot
     if screenshot_file.is_file():
