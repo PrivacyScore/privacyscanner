@@ -15,8 +15,8 @@ import sqlite3
 import sys
 import shutil
 
-from OpenWPM.automation import TaskManager, CommandSequence
-from OpenWPM.automation.SocketInterface import clientsocket
+from automation import TaskManager, CommandSequence
+from automation.SocketInterface import clientsocket
 
 
 # TODO: Clean up this script
