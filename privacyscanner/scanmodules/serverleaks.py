@@ -13,8 +13,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 
 name = 'serverleak'
-dependencies = []
-required_keys = ['site_url']
+dependencies = ['network']
+required_keys = ['final_url']
 
 
 def _match_db_dump(content):
@@ -159,13 +159,11 @@ def _response_to_json(resp: Response) -> bytes:
     }
 
 
-def scan_site(result, logger, options):
+def _check_leaks(url, max_workers):
     leaks = []
     trials = {}
     # determine hostname
-    parsed_url = urlparse(result['site_url'])
-
-    max_workers = options.get('max_workers', 8)
+    parsed_url = urlparse(url)
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         url_to_future = {}
@@ -174,7 +172,7 @@ def scan_site(result, logger, options):
             trial_t = trial
             # Check if trial is callable. If so, call it and save the result
             if callable(trial):
-                trial_t = trial(result['site_url'])
+                trial_t = trial(url)
                 if trial_t is None:
                     continue
             request_url = '{}://{}/{}'.format(
@@ -200,7 +198,7 @@ def scan_site(result, logger, options):
 
     for trial, pattern in TRIALS:
         if callable(trial):
-            trial = trial(result['site_url'])
+            trial = trial(url)
             if trial is None:
                 continue
         if trial not in trials:
@@ -226,4 +224,12 @@ def scan_site(result, logger, options):
                 if pattern(response['text']):
                     leaks.append(trial)
 
-    result['leaks'] = leaks
+    return leaks
+
+def scan_site(result, logger, options):
+    max_workers = options.get('max_workers', 8)
+
+    # Note: This does not scan the original site_url before redirection.
+    #       There might be cases where only the start page redirects, but
+    #       other paths (which do not get redirected) contain sensitive files.
+    result['leaks'] = _check_leaks(result['final_url'], max_workers)
