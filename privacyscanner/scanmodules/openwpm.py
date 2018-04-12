@@ -124,7 +124,7 @@ def scan_site(result, logger, options):
                 'url': requrl,
                 'method': method,
                 'referrer': referrer,
-                'headers': headers
+                'headers': json.loads(headers)
             })
 
             # extract domain name from request and check whether it is a 3rd party host
@@ -146,7 +146,7 @@ def scan_site(result, logger, options):
 
         # Identify known trackers
         start_time = timeit.default_timer()
-        _insert_detected_trackers(result, logger, options)
+        result['tracker_requests'] = _get_detected_trackers(third_party_requests, logger, options)
         elapsed = timeit.default_timer() - start_time
         result["tracker_requests_elapsed_seconds"] = elapsed
 
@@ -386,14 +386,14 @@ def pixelize_screenshot(screenshot, screenshot_pixelized, target_width=390, pixe
     img.save(screenshot_pixelized, format='png')
 
 
-def _insert_detected_trackers(result, logger, options):
+def _get_detected_trackers(third_party_requests, logger, options):
     """
     Detect 3rd party trackers and return a list of them.
 
     :param third_parties: List of third-party requests (not: hosts) to analyze
     :return: a list of unique hosts in the form domain.tld
     """
-    if not result['third_party_requests']:
+    if not third_party_requests:
         return []
 
     blacklist = [re.compile('^[|]*http[s]*[:/]*$'),  # match http[s]:// in all variations
@@ -443,7 +443,7 @@ def _insert_detected_trackers(result, logger, options):
 
     i = 0
 
-    for url in result['third_party_requests']:
+    for url in third_party_requests:
         if abr.should_block(url):
             ext = tldextract.extract(url)
             trackers.append("{}.{}".format(ext.domain, ext.suffix))
@@ -451,7 +451,7 @@ def _insert_detected_trackers(result, logger, options):
         if i % 20 == 0:
             elapsed = timeit.default_timer() - start_time
             logger.info("Checked %i domains, %i secs elapsed..." % (i, elapsed))
-    result['tracker_requests'] = list(set(trackers))
+    return list(set(trackers))
 
 
 def detect_google_analytics(requests):
