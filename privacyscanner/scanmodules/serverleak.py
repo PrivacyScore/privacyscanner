@@ -165,8 +165,9 @@ def scan_site(result, logger, options):
     # determine hostname
     parsed_url = urlparse(result['site_url'])
 
-    # TODO: Get worker count from options
-    with ThreadPoolExecutor(max_workers=8) as executor:
+    max_workers = options.get('max_workers', 8)
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         url_to_future = {}
 
         for trial, pattern in TRIALS:
