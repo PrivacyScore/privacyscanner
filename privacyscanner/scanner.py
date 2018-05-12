@@ -50,7 +50,7 @@ def load_config(config_file):
 
 
 def slugify(somestr):
-    allowed_chars = string.ascii_lowercase + '.-'
+    allowed_chars = string.ascii_lowercase + string.digits + '.-'
     return ''.join(x for x in somestr.lower() if x in allowed_chars)
 
 
