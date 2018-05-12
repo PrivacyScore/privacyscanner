@@ -41,7 +41,7 @@ def scan_site(result, logger, options):
         return
 
     virtualenv_path = options['virtualenv_path']
-    subprocess.call([
+    subprocess.check_call([
         OPENWPM_WRAPPER_EXECUTABLE,
         result['site_url'],
         os.getcwd(),
