@@ -113,6 +113,13 @@ def scan_site(args):
         dependencies[mod.name] = set(mod.dependencies)
     scan_module_names = toposort_flatten(dependencies)
 
+    if args.skip_dependencies:
+        scan_module_names = [
+            scan_module_name
+            for scan_module_name in scan_module_names
+            if scan_module_name in args.scan_modules
+        ]
+
     result = Result(result_json, DirectoryFileHandler(results_dir))
     stream_handler = ScanStreamHandler()
     for scan_module_name in scan_module_names:
@@ -171,6 +178,9 @@ def main():
     parser_scan.add_argument('--scans', dest='scan_modules',
                              type=lambda scans: [x.strip() for x in scans.split(',')],
                              help='Comma separated list of scan modules')
+    parser_scan.add_argument('--skip-dependencies', action='store_true',
+                             help='Do not run dependencies that are not explicitly '
+                             'specified using --scans')
     parser_scan.add_argument('--print', dest='print_result', action='store_true')
     parser_scan.set_defaults(func=scan_site)
 
@@ -179,6 +189,8 @@ def main():
     parser_print_master_config.set_defaults(func=print_master_config)
 
     args = parser.parse_args()
+    if args.skip_dependencies and not args.scan_modules:
+        parser.error('--skip-dependencies can only be set when using --scans')
     try:
         args.func(args)
     except CommandError as e:
