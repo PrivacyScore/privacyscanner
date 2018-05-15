@@ -97,6 +97,7 @@ TRIALS = [
     ('.git/HEAD', 'ref:'),
     ('.svn/wc.db', 'SQLite'),
     ('core', 'ELF'),
+    ('.DS_Store', 'Bud1'),
 
     # Check for Database dumps
     # sqldump - MySQL/MariaDB
