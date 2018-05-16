@@ -163,7 +163,7 @@ def print_master_config(args):
 
 def main():
     parser = argparse.ArgumentParser(description='Scan sites for privacy.')
-    subparsers = parser.add_subparsers()
+    subparsers = parser.add_subparsers(dest='command')
 
     parser_run_workers = subparsers.add_parser('run_workers')
     parser_run_workers.add_argument('--config', help='Configuration_file')
@@ -189,7 +189,9 @@ def main():
     parser_print_master_config.set_defaults(func=print_master_config)
 
     args = parser.parse_args()
-    if args.skip_dependencies and not args.scan_modules:
+    if args.command is None:
+        parser.error('No arguments')
+    if args.command == 'scan' and args.skip_dependencies and not args.scan_modules:
         parser.error('--skip-dependencies can only be set when using --scans')
     try:
         args.func(args)
