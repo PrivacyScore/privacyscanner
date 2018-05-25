@@ -108,6 +108,9 @@ ON_NEW_DOCUMENT_JAVASCRIPT = """
     function log(type, message) {
         var setBreakpointOnThisLine;
     }
+    
+    __extra_scripts__
+    window.alert = function(msg) { log('alert', msg); };
 })();
 """.lstrip()
 
@@ -125,6 +128,7 @@ class AbstractChromeScan:
         self.response_log = []
         self._page_loaded = False
         self._debugger_attached = False
+        self._extra_scripts = []
 
     def scan(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -179,7 +183,9 @@ class AbstractChromeScan:
         self.tab.Network.enable()
 
         self.tab.Page.loadEventFired = self._cb_load_event_fired
-        self.tab.Page.addScriptToEvaluateOnNewDocument(source=ON_NEW_DOCUMENT_JAVASCRIPT)
+        extra_scripts = '\n'.join(self._extra_scripts)
+        source = ON_NEW_DOCUMENT_JAVASCRIPT.replace('__extra_scripts__', extra_scripts)
+        self.tab.Page.addScriptToEvaluateOnNewDocument(source=source)
         self.tab.Page.enable()
 
         self.tab.Debugger.scriptParsed = self._cb_script_parsed

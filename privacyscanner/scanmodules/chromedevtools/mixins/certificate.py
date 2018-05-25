@@ -18,6 +18,8 @@ class CertificateMixin(AbstractChromeScan):
     def _get_certificate(self, url):
         # See https://cryptography.io/en/latest/x509/reference/#cryptography.x509.Certificate
         cert_chain = self.tab.Network.getCertificate(origin=url)['tableNames']
+        if not cert_chain:
+            return None
         cert = load_der_x509_certificate(b64decode(cert_chain[0]), backend=default_backend())
         public_key = cert.public_key()
         key_info = {'size': public_key.key_size}
