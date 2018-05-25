@@ -1,16 +1,11 @@
 [[source]]
-
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
-
 [dev-packages]
 
-
-
 [packages]
-
 "psycopg2-binary" = "*"
 toposort = "*"
 dnspython = "*"
@@ -18,8 +13,8 @@ dnspython = "*"
 requests = "*"
 adblockparser = "*"
 tldextract = "*"
-
+pychrome = "*"
+cryptography = "*"
 
 [requires]
-
 python_version = "3.6"
