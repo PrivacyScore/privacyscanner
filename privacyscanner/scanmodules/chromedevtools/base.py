@@ -206,10 +206,16 @@ class AbstractChromeScan:
         self.tab.Debugger.pause()
 
         self.tab.Page.navigate(url=self.result['site_url'], _timeout=30)
-        self.tab.wait(30)
-        if not self._page_loaded:
-            self._extract_information()
-            self.tab.stop()
+
+        # For some reason, we can not extract information reliably inside
+        # a callback, therefore we wait until the load_event_fired
+        # callback has been fired.
+        max_wait = 30
+        time_start = time.time()
+        while not self._page_loaded and time.time() - time_start < max_wait:
+            self.tab.wait(0.5)
+        self._extract_information()
+        self.tab.stop()
 
     def _cb_request_will_be_sent(self, request, **kwargs):
         self.request_log.append(request)
@@ -257,9 +263,6 @@ class AbstractChromeScan:
 
     def _cb_load_event_fired(self, timestamp, **kwargs):
         self._page_loaded = True
-        self.tab.wait(5)
-        self._extract_information()
-        self.tab.stop()
 
     def _cb_js(self, **kwargs):
         self.tab.Page.handleJavaScriptDialog(accept=True)
