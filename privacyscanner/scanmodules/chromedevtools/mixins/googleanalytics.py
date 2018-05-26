@@ -7,11 +7,14 @@ from ..base import AbstractChromeScan
 TRACKER_JS = """
 JSON.stringify((function() {
     let info = {
-        'was_ready': false,
+        'is_available': false,
         'trackers': []
     };
+    if (typeof(ga) == 'undefined') {
+        return info;
+    }
     ga(function() {
-        info['was_ready'] = true;
+        info['is_available'] = true;
         ga.getAll().forEach(function(tracker) {
             let anonymize_ip = tracker.get('anonymizeIp');
             info['trackers'].push({
@@ -29,13 +32,13 @@ JSON.stringify((function() {
 class GoogleAnalyticsMixin(AbstractChromeScan):
     def _extract_google_analytics(self):
         ga = {}
-        result = self.tab.Runtime.evaluate(expression="typeof(ga) !== 'undefined'")
-        ga['has_ga_object'] = result['result']['value']
+
         info = json.loads(self.tab.Runtime.evaluate(expression=TRACKER_JS)['result']['value'])
-        ga.update(info)
+        ga['has_ga_object'] = info['is_available']
 
         num_requests_aip = 0
         num_requests_no_aip = 0
+        has_ga_requests = False
         for request in self.request_log:
             parsed_url = request['parsed_url']
             if self._is_google_request(parsed_url):
@@ -44,12 +47,15 @@ class GoogleAnalyticsMixin(AbstractChromeScan):
                     num_requests_aip += 1
                 else:
                     num_requests_no_aip += 1
+                has_ga_requests = True
+        ga['has_requests'] = has_ga_requests
 
-        ga['anonymize'] = {
-            'all_set_js': all(tracker['anonymize_ip'] for tracker in ga['trackers']), # noqa
-            'num_requests_aip': num_requests_aip,
-            'num_requests_no_aip': num_requests_no_aip
-        }
+        if has_ga_requests:
+            ga['anonymize'] = {
+                'all_set_js': all(tracker['anonymize_ip'] for tracker in ga['trackers']), # noqa
+                'num_requests_aip': num_requests_aip,
+                'num_requests_no_aip': num_requests_no_aip
+            }
 
         self.result['google_analytics'] = ga
 
