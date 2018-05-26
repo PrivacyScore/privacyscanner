@@ -10,7 +10,6 @@ class FinalUrlMixin(AbstractChromeScan):
         # the navigation history (You know, those Angular hipster sites ...)
         while index >= 0:
             entry = history['entries'][index]
-            print('looking for', entry)
             if entry['url'] in response_urls:
                 final_url = entry['url']
                 break
