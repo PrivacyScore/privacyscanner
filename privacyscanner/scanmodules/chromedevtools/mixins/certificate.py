@@ -1,5 +1,6 @@
 from base64 import b64decode
 from binascii import hexlify
+from datetime import datetime
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -44,5 +45,6 @@ class CertificateMixin(AbstractChromeScan):
             'issuer':  {attr.oid._name: attr.value for attr in cert.issuer},
             'subject': {attr.oid._name: attr.value for attr in cert.subject},
             'key': key_info,
+            'is_expired': datetime.now() > cert.not_valid_after
         }
         # TODO: Add extensions
