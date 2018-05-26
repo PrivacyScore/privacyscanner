@@ -6,6 +6,7 @@ from .mixins.tlsdetails import TLSDetailsMixin
 from .mixins.certificate import CertificateMixin
 from .mixins.thirdparties import ThirdPartyMixin
 from .mixins.insecurecontent import InsecureContentMixin
+from .mixins.failedrequests import FailedRequestsMixin
 
 
 name = 'chromedevtools'
@@ -15,7 +16,7 @@ required_keys = ['site_url']
 
 class ChromeScan(FinalUrlMixin, RequestsMixin, CookieMixin, TLSDetailsMixin,
                  CertificateMixin, GoogleAnalyticsMixin, ThirdPartyMixin,
-                 InsecureContentMixin):
+                 InsecureContentMixin, FailedRequestsMixin):
     def _initialize_scripts(self):
         pass
 
@@ -28,6 +29,7 @@ class ChromeScan(FinalUrlMixin, RequestsMixin, CookieMixin, TLSDetailsMixin,
         self._extract_google_analytics()
         self._extract_third_parties()
         self._extract_security_state()
+        self._extract_failed_requests()
 
     def _receive_log(self, log_type, message, call_stack):
         pass
