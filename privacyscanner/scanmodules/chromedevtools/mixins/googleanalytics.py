@@ -40,7 +40,7 @@ class GoogleAnalyticsMixin(AbstractChromeScan):
             parsed_url = request['parsed_url']
             if self._is_google_request(parsed_url):
                 qs = parse_qs(parsed_url.query)
-                if 'aip' in qs and qs['aip'][-1] == '1':
+                if 'aip' in qs and qs['aip'][-1] in ('1', 'true'):
                     num_requests_aip += 1
                 else:
                     num_requests_no_aip += 1
@@ -58,4 +58,4 @@ class GoogleAnalyticsMixin(AbstractChromeScan):
         # Google uses stats.g.doubleclick.net for customers that have
         # enabled the Remarketing with Google Analytics feature,
         if parsed_url.netloc in ('www.google-analytics.com', 'stats.g.doubleclick.net'):
-            return 'collect' in parsed_url.path or 'utm.gif' in parsed_url.path
+            return any(p in parsed_url.path for p in ('collect', 'utm.gif', 'gtm/js'))
