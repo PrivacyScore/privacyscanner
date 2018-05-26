@@ -236,9 +236,10 @@ class AbstractChromeScan:
         self._extract_information()
         self.tab.stop()
 
-    def _cb_request_will_be_sent(self, request, **kwargs):
+    def _cb_request_will_be_sent(self, request, requestId, **kwargs):
         # To avoid reparsing the URL in many places, we parse them all here
         request['parsed_url'] = urlparse(request['url'])
+        request['requestId'] = requestId
         self.request_log.append(request)
         #print(kwargs['requestId'])
         #print(kwargs)
