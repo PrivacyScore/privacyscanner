@@ -1,3 +1,4 @@
+from .mixins.finalurl import FinalUrlMixin
 from .mixins.googleanalytics import GoogleAnalyticsMixin
 from .mixins.cookies import CookieMixin
 from .mixins.requests import RequestsMixin
@@ -10,11 +11,12 @@ dependencies = ['network']
 required_keys = ['site_url']
 
 
-class ChromeScan(RequestsMixin, CookieMixin, CertificateMixin, GoogleAnalyticsMixin, ThirdPartyMixin):
+class ChromeScan(FinalUrlMixin, RequestsMixin, CookieMixin, CertificateMixin, GoogleAnalyticsMixin, ThirdPartyMixin):
     def _initialize_scripts(self):
         pass
 
     def _extract_information(self):
+        self._extract_final_url()
         self._extract_requests()
         self._extract_cookies()
         self._extract_certificate()
