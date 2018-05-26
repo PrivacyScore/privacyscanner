@@ -193,6 +193,8 @@ class AbstractChromeScan:
                                                     screenWidth=1920, screenHeight=1080,
                                                     deviceScaleFactor=0, mobile=False)
 
+        useragent = self.tab.Browser.getVersion()['userAgent'].replace('Headless', '')
+        self.tab.Network.setUserAgentOverride(userAgent=useragent)
         self.tab.Network.requestWillBeSent = self._cb_request_will_be_sent
         self.tab.Network.responseReceived = self._cb_response_received
         self.tab.Network.loadingFailed = self._cb_loading_failed
