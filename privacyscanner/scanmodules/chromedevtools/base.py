@@ -210,11 +210,15 @@ class AbstractChromeScan:
 
         # For some reason, we can not extract information reliably inside
         # a callback, therefore we wait until the load_event_fired
-        # callback has been fired.
+        # callback has been fired. In order to catch JavaScript actions
+        # that occur after the load event, we wait another 5 seconds.
+        # There is a network idle event which may could be used instead,
+        # but that needs to be evaluated.
         max_wait = 30
         time_start = time.time()
         while not self._page_loaded and time.time() - time_start < max_wait:
             self.tab.wait(0.5)
+        self.tab.wait(5)
         self._extract_information()
         self.tab.stop()
 
