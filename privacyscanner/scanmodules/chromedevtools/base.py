@@ -3,6 +3,7 @@ import subprocess
 import tempfile
 import time
 from pathlib import Path
+from urllib.parse import urlparse
 
 import pychrome
 from requests.exceptions import ConnectionError
@@ -218,6 +219,8 @@ class AbstractChromeScan:
         self.tab.stop()
 
     def _cb_request_will_be_sent(self, request, **kwargs):
+        # To avoid reparsing the URL in many places, we parse them all here
+        request['parsed_url'] = urlparse(request['url'])
         self.request_log.append(request)
         #print(kwargs['requestId'])
         #print(kwargs)
