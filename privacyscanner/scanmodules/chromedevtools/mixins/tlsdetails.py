@@ -10,7 +10,6 @@ class TLSDetailsMixin(AbstractChromeScan):
         if 'securityDetails' not in response:
             self.result['tls'] = {
                 'has_tls': False,
-                'details': None
             }
             return
 
