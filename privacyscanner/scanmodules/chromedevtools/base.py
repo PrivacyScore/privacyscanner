@@ -131,6 +131,7 @@ class AbstractChromeScan:
         self.browser = None
         self.scan_start = None
         self.request_log = []
+        self.failed_request_log = []
         self.response_log = []
         self.security_state_log = []
         self._page_loaded = False
@@ -194,6 +195,7 @@ class AbstractChromeScan:
 
         self.tab.Network.requestWillBeSent = self._cb_request_will_be_sent
         self.tab.Network.responseReceived = self._cb_response_received
+        self.tab.Network.loadingFailed = self._cb_loading_failed
         self.tab.Network.enable()
 
         self.tab.Security.securityStateChanged = self._cb_security_state_changed
@@ -288,6 +290,9 @@ class AbstractChromeScan:
 
     def _cb_security_state_changed(self, **state):
         self.security_state_log.append(state)
+
+    def _cb_loading_failed(self, **failed_request):
+        self.failed_request_log.append(failed_request)
 
     def _extract_information(self):
         raise NotImplementedError('Please implement me')
