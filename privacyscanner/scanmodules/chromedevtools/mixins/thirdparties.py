@@ -9,8 +9,10 @@ class ThirdPartyMixin(AbstractChromeScan):
             'http': set(),
             'https': set()
         }
-        extracted = tldextract.extract(self.result['site_url'])
-        first_party_domains = {extracted.registered_domain}
+        first_party_domains = set()
+        for url in (self.result['site_url'], self.result['final_url']):
+            extracted = tldextract.extract(url)
+            first_party_domains.add(extracted.registered_domain)
         for request in self.request_log:
             extracted_url = tldextract.extract(request['url'])
             scheme = request['parsed_url'].scheme
