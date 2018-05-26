@@ -2,6 +2,7 @@ from .mixins.finalurl import FinalUrlMixin
 from .mixins.googleanalytics import GoogleAnalyticsMixin
 from .mixins.cookies import CookieMixin
 from .mixins.requests import RequestsMixin
+from .mixins.tlsdetails import TLSDetailsMixin
 from .mixins.certificate import CertificateMixin
 from .mixins.thirdparties import ThirdPartyMixin
 from .mixins.insecurecontent import InsecureContentMixin
@@ -12,8 +13,9 @@ dependencies = ['network']
 required_keys = ['site_url']
 
 
-class ChromeScan(FinalUrlMixin, RequestsMixin, CookieMixin, CertificateMixin,
-                 GoogleAnalyticsMixin, ThirdPartyMixin, InsecureContentMixin):
+class ChromeScan(FinalUrlMixin, RequestsMixin, CookieMixin, TLSDetailsMixin,
+                 CertificateMixin, GoogleAnalyticsMixin, ThirdPartyMixin,
+                 InsecureContentMixin):
     def _initialize_scripts(self):
         pass
 
@@ -21,6 +23,7 @@ class ChromeScan(FinalUrlMixin, RequestsMixin, CookieMixin, CertificateMixin,
         self._extract_final_url()
         self._extract_requests()
         self._extract_cookies()
+        self._extract_tls_details()
         self._extract_certificate()
         self._extract_google_analytics()
         self._extract_third_parties()
