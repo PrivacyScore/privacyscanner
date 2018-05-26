@@ -203,7 +203,7 @@ class AbstractChromeScan:
         self.tab.Security.setIgnoreCertificateErrors(ignore=True)
 
         self.tab.Page.loadEventFired = self._cb_load_event_fired
-        self.tab.Page.javascriptDialogOpening = self._cb_js
+        self.tab.Page.javascriptDialogOpening = self._cb_javascript_dialog_opening
         extra_scripts = '\n'.join('(function() { %s })();' % script
                                   for script in self._extra_scripts)
         source = ON_NEW_DOCUMENT_JAVASCRIPT.replace('__extra_scripts__', extra_scripts)
@@ -285,7 +285,7 @@ class AbstractChromeScan:
     def _cb_load_event_fired(self, timestamp, **kwargs):
         self._page_loaded = True
 
-    def _cb_js(self, **kwargs):
+    def _cb_javascript_dialog_opening(self, **kwargs):
         self.tab.Page.handleJavaScriptDialog(accept=True)
 
     def _cb_security_state_changed(self, **state):
