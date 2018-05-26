@@ -234,7 +234,7 @@ class AbstractChromeScan:
         #print(kwargs)
 
     def _cb_response_received(self, response, **kwargs):
-        pass
+        self.response_log.append(response)
 
     def _cb_script_parsed(self, **script):
         # The first script loaded is our script we set via the method
