@@ -110,12 +110,11 @@ ON_NEW_DOCUMENT_JAVASCRIPT = """
     }
     
     __extra_scripts__
-    window.alert = function(msg) { log('alert', msg); };
 })();
 """.lstrip()
 
 # See comments in ON_NEW_DOCUMENT_JAVASCRIPT
-ON_NEW_DOCUMENT_JAVASCRIPT_LINENO = 6
+ON_NEW_DOCUMENT_JAVASCRIPT_LINENO = 7
 
 
 class AbstractChromeScan:
@@ -128,6 +127,7 @@ class AbstractChromeScan:
         self.response_log = []
         self._page_loaded = False
         self._debugger_attached = False
+        self._log_breakpoint = None
         self._extra_scripts = []
 
     def scan(self):
@@ -175,6 +175,8 @@ class AbstractChromeScan:
             self.result['chrome_error'] = 'timeout'
             return
 
+        self._initialize_scripts()
+
         self.tab = self.browser.new_tab()
         self.tab.start()
 
@@ -183,7 +185,9 @@ class AbstractChromeScan:
         self.tab.Network.enable()
 
         self.tab.Page.loadEventFired = self._cb_load_event_fired
-        extra_scripts = '\n'.join(self._extra_scripts)
+        self.tab.Page.javascriptDialogOpening = self._cb_js
+        extra_scripts = '\n'.join('(function() { %s })();' % script
+                                  for script in self._extra_scripts)
         source = ON_NEW_DOCUMENT_JAVASCRIPT.replace('__extra_scripts__', extra_scripts)
         self.tab.Page.addScriptToEvaluateOnNewDocument(source=source)
         self.tab.Page.enable()
@@ -192,6 +196,10 @@ class AbstractChromeScan:
         self.tab.Debugger.scriptFailedToParse = self._cb_script_failed_to_parse
         self.tab.Debugger.paused = self._cb_paused
         self.tab.Debugger.enable()
+        # Pause the JavaScript before we navigate to the page. This
+        # gives us some time to setup the debugger before any JavaScript
+        # runs.
+        self.tab.Debugger.pause()
 
         self.tab.Page.navigate(url=self.result['site_url'], _timeout=30)
         self.tab.wait(30)
@@ -212,17 +220,36 @@ class AbstractChromeScan:
         # Page.addScriptToEvaluateOnNewDocument. We want to to attach
         # to the log function, which will be used to analyse the page.
         if not self._debugger_attached:
-            self.tab.Debugger.setBreakpoint(location={
+            self._log_breakpoint = self.tab.Debugger.setBreakpoint(location={
                 'scriptId': script['scriptId'],
                 'lineNumber': ON_NEW_DOCUMENT_JAVASCRIPT_LINENO
-            })
+            })['breakpointId']
             self._debugger_attached = True
+            self.tab.Debugger.resume()
 
     def _cb_script_failed_to_parse(self, **kwargs):
         pass
 
-    def _cb_paused(self, **kwargs):
-        pass
+    def _cb_paused(self, **info):
+        if self._log_breakpoint in info['hitBreakpoints']:
+            call_frames = []
+            expression = ("typeof(arguments) !== 'undefined' ? "
+                          "JSON.stringify(Array.from(arguments)) : 'null';")
+            for call_frame in info['callFrames']:
+                args = json.loads(self.tab.Debugger.evaluateOnCallFrame(
+                    callFrameId=call_frame['callFrameId'],
+                    expression=expression)['result']['value'])
+                call_frames.append({
+                    'url': call_frame['url'],
+                    'functionName': call_frame['functionName'],
+                    'location': {
+                        'lineNumber': call_frame['location']['lineNumber'],
+                        'columnNumber': call_frame['location']['columnNumber']
+                    },
+                    'args': args
+                })
+            self.tab.Debugger.resume()
+            self._receive_log(*call_frames[0]['args'], call_frames[1:])
 
     def _cb_load_event_fired(self, timestamp, **kwargs):
         self._page_loaded = True
@@ -230,5 +257,14 @@ class AbstractChromeScan:
         self._extract_information()
         self.tab.stop()
 
+    def _cb_js(self, **kwargs):
+        self.tab.Page.handleJavaScriptDialog(accept=True)
+
     def _extract_information(self):
         raise NotImplementedError('Please implement me')
+
+    def _receive_log(self, log_type, message, call_stack):
+        pass
+
+    def _initialize_scripts(self):
+        pass
