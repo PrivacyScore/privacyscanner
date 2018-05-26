@@ -12,6 +12,7 @@ class TLSDetailsMixin(AbstractChromeScan):
                 'has_tls': False,
                 'details': None
             }
+            return
 
         details = {}
         # See https://chromedevtools.github.io/devtools-protocol/tot/Network#type-SecurityDetails
