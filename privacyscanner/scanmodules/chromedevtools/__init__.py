@@ -9,6 +9,7 @@ from .mixins.insecurecontent import InsecureContentMixin
 from .mixins.failedrequests import FailedRequestsMixin
 from .mixins.responses import ResponsesMixin
 from .mixins.securityheaders import SecurityHeadersMixin
+from .mixins.trackerdetect import TrackerDetectMixin
 
 
 name = 'chromedevtools'
@@ -19,7 +20,7 @@ required_keys = ['site_url']
 class ChromeScan(FinalUrlMixin, RequestsMixin, CookieMixin, TLSDetailsMixin,
                  CertificateMixin, GoogleAnalyticsMixin, ThirdPartyMixin,
                  InsecureContentMixin, FailedRequestsMixin, ResponsesMixin,
-                 SecurityHeadersMixin):
+                 SecurityHeadersMixin, TrackerDetectMixin):
     def _initialize_scripts(self):
         pass
 
@@ -36,6 +37,7 @@ class ChromeScan(FinalUrlMixin, RequestsMixin, CookieMixin, TLSDetailsMixin,
         # TODO: Discuss if we really need the responses
         # self._extract_responses()
         self._extract_security_headers()
+        self._extract_trackers()
 
     def _receive_log(self, log_type, message, call_stack):
         pass

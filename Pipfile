@@ -15,6 +15,8 @@ adblockparser = "*"
 tldextract = "*"
 pychrome = "*"
 cryptography = "*"
+cython = "*"
+"re2" = {git = "https://github.com/andreasvc/pyre2.git"}
 
 [requires]
 python_version = "3.6"
