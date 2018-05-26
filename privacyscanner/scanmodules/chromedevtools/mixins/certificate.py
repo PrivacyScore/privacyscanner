@@ -13,7 +13,9 @@ from ..base import AbstractChromeScan
 
 class CertificateMixin(AbstractChromeScan):
     def _extract_certificate(self):
-        self.result['tls']['certificate'] = self._get_certificate(self.result['final_url'])
+        certificate = self._get_certificate(self.result['final_url'])
+        if certificate:
+            self.result['tls']['certificate'] = certificate
 
     def _get_certificate(self, url):
         # See https://cryptography.io/en/latest/x509/reference/#cryptography.x509.Certificate
