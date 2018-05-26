@@ -235,6 +235,10 @@ class AbstractChromeScan:
         while not self._page_loaded and time.time() - time_start < max_wait:
             self.tab.wait(0.5)
         self.tab.wait(5)
+        self.tab.Network.disable()
+        self.tab.Security.disable()
+        self.tab.Page.disable()
+        self.tab.Debugger.disable()
         self._extract_information()
         self.tab.stop()
 
