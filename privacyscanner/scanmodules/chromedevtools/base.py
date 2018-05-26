@@ -96,6 +96,10 @@ PREFS = {
                 }
             }
         }
+    },
+    'session': {
+        'restore_on_startup': 4, # 4 = Use startup_urls
+        'startup_urls': ['about:blank']
     }
 }
 
