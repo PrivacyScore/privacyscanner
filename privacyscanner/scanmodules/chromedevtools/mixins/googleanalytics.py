@@ -7,14 +7,14 @@ from ..base import AbstractChromeScan
 TRACKER_JS = """
 JSON.stringify((function() {
     let info = {
-        'is_available': false,
+        'has_ga_object': false,
         'trackers': []
     };
     if (typeof(ga) == 'undefined') {
         return info;
     }
     ga(function() {
-        info['is_available'] = true;
+        info['has_ga_object'] = true;
         ga.getAll().forEach(function(tracker) {
             let anonymize_ip = tracker.get('anonymizeIp');
             info['trackers'].push({
@@ -34,7 +34,9 @@ class GoogleAnalyticsMixin(AbstractChromeScan):
         ga = {}
 
         info = json.loads(self.tab.Runtime.evaluate(expression=TRACKER_JS)['result']['value'])
-        ga['has_ga_object'] = info['is_available']
+        ga.update(info)
+        if not ga['has_ga_object']:
+            del ga['trackers']
 
         num_requests_aip = 0
         num_requests_no_aip = 0
