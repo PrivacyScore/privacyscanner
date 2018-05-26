@@ -15,10 +15,12 @@ class ThirdPartyMixin(AbstractChromeScan):
             extracted = tldextract.extract(url)
             first_party_domains.add(extracted.registered_domain)
         for request in self.request_log:
+            request['is_thirdparty'] = False
             extracted_url = tldextract.extract(request['url'])
             parsed_url = request['parsed_url']
             if extracted_url.registered_domain in first_party_domains:
                 continue
+            request['is_thirdparty'] = True
             third_parties['fqdns'].add(extracted_url.fqdn)
             if parsed_url.scheme not in ('http', 'https'):
                 continue
