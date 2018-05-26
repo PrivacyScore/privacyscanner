@@ -130,6 +130,7 @@ class AbstractChromeScan:
         self.browser = None
         self.request_log = []
         self.response_log = []
+        self.security_state_log = []
         self._page_loaded = False
         self._debugger_attached = False
         self._log_breakpoint = None
@@ -192,6 +193,10 @@ class AbstractChromeScan:
         self.tab.Network.requestWillBeSent = self._cb_request_will_be_sent
         self.tab.Network.responseReceived = self._cb_response_received
         self.tab.Network.enable()
+
+        self.tab.Security.securityStateChanged = self._cb_security_state_changed
+        self.tab.Security.enable()
+        self.tab.Security.setIgnoreCertificateErrors(ignore=True)
 
         self.tab.Page.loadEventFired = self._cb_load_event_fired
         self.tab.Page.javascriptDialogOpening = self._cb_js
@@ -277,6 +282,9 @@ class AbstractChromeScan:
 
     def _cb_js(self, **kwargs):
         self.tab.Page.handleJavaScriptDialog(accept=True)
+
+    def _cb_security_state_changed(self, **state):
+        self.security_state_log.append(state)
 
     def _extract_information(self):
         raise NotImplementedError('Please implement me')
