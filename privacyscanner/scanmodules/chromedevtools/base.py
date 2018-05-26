@@ -225,7 +225,7 @@ class AbstractChromeScan:
         #print(kwargs['requestId'])
         #print(kwargs)
 
-    def _cb_response_received(self, **kwargs):
+    def _cb_response_received(self, response, **kwargs):
         pass
 
     def _cb_script_parsed(self, **script):
