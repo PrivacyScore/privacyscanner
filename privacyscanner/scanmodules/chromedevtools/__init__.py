@@ -12,7 +12,7 @@ from .mixins.securityheaders import SecurityHeadersMixin
 
 
 name = 'chromedevtools'
-dependencies = ['network']
+dependencies = []
 required_keys = ['site_url']
 
 
