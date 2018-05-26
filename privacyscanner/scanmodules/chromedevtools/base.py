@@ -185,6 +185,10 @@ class AbstractChromeScan:
         self.tab = self.browser.new_tab()
         self.tab.start()
 
+        self.tab.Emulation.setDeviceMetricsOverride(width=1920, height=1080,
+                                                    screenWidth=1920, screenHeight=1080,
+                                                    deviceScaleFactor=0, mobile=False)
+
         self.tab.Network.requestWillBeSent = self._cb_request_will_be_sent
         self.tab.Network.responseReceived = self._cb_response_received
         self.tab.Network.enable()
