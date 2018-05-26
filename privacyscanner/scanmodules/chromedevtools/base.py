@@ -2,6 +2,7 @@ import json
 import subprocess
 import tempfile
 import time
+from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -128,6 +129,7 @@ class AbstractChromeScan:
         self.logger = logger
         self.options = options
         self.browser = None
+        self.scan_start = None
         self.request_log = []
         self.response_log = []
         self.security_state_log = []
@@ -215,6 +217,7 @@ class AbstractChromeScan:
         # runs.
         self.tab.Debugger.pause()
 
+        self.scan_start = datetime.utcnow()
         self.tab.Page.navigate(url=self.result['site_url'], _timeout=30)
 
         # For some reason, we can not extract information reliably inside
