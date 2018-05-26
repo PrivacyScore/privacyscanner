@@ -15,7 +15,7 @@ WITH job AS (
     FROM scanner_scanjob AS sj2
     WHERE sj2.dependency_order < sj1.dependency_order AND
           sj2.scan_id = sj1.scan_id
-  ) AND sj1.scan_module IN(%s)
+  ) AND sj1.scan_module IN %s
     AND si.scan_id = sj1.scan_id
     AND si.scan_module = sj1.scan_module
     AND si.num_tries < 3
