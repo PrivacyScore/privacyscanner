@@ -33,7 +33,8 @@ class ChromeScan(FinalUrlMixin, RequestsMixin, CookieMixin, TLSDetailsMixin,
         self._extract_third_parties()
         self._extract_security_state()
         self._extract_failed_requests()
-        self._extract_responses()
+        # TODO: Discuss if we really need the responses
+        # self._extract_responses()
         self._extract_security_headers()
 
     def _receive_log(self, log_type, message, call_stack):
