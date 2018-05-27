@@ -14,15 +14,17 @@ from ..base import AbstractChromeScan
 
 class CertificateMixin(AbstractChromeScan):
     def _extract_certificate(self):
-        certificate = self._get_certificate(self.result['final_url'])
-        if certificate:
-            self.result['tls']['certificate'] = certificate
+        explanations = self.security_state_log[-1]['explanations']
+        cert_chain = None
+        for explanation in explanations:
+            if 'certificate' in explanation:
+                cert_chain = explanation['certificate']
+                break
+        if cert_chain:
+            self.result['tls']['certificate'] = self._get_certificate_info(cert_chain)
 
-    def _get_certificate(self, url):
+    def _get_certificate_info(self, cert_chain):
         # See https://cryptography.io/en/latest/x509/reference/#cryptography.x509.Certificate
-        cert_chain = self.tab.Network.getCertificate(origin=url)['tableNames']
-        if not cert_chain:
-            return None
         cert = load_der_x509_certificate(b64decode(cert_chain[0]), backend=default_backend())
         public_key = cert.public_key()
         key_info = {'size': public_key.key_size}
