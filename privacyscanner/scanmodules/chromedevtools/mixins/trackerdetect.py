@@ -18,7 +18,7 @@ class TrackerDetectMixin(AbstractChromeScan):
         num_tracker_requests = 0
         blacklist = set()
         for request in self.request_log:
-            request['is_tracker'] = True
+            request['is_tracker'] = False
             if not request['is_thirdparty']:
                 continue
             is_tracker = request['parsed_url'].netloc in blacklist
