@@ -12,7 +12,7 @@ class FailedRequestsMixin(AbstractChromeScan):
                 error_type = 'dns-not-resolved'
             elif 'net::ERR_UNKNOWN_URL_SCHEME' in error_text:
                 error_type = 'unknown-url-scheme'
-            elif 'net::net::ERR_ABORTED' in error_text:
+            elif 'net::ERR_ABORTED' in error_text:
                 # Requests that were aborted by the site (e.g. a XHR
                 # request that was canceled) are not considered failed.
                 continue
