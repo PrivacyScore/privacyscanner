@@ -7,8 +7,8 @@ class ThirdPartyMixin(AbstractChromeScan):
     def _extract_third_parties(self):
         third_parties = {
             'fqdns': set(),
-            'http_requests': [],
-            'https_requests': []
+            'num_http_requests': 0,
+            'num_https_requests': 0
         }
         first_party_domains = set()
         for url in (self.result['site_url'], self.result['final_url']):
@@ -24,7 +24,7 @@ class ThirdPartyMixin(AbstractChromeScan):
             third_parties['fqdns'].add(extracted_url.fqdn)
             if parsed_url.scheme not in ('http', 'https'):
                 continue
-            third_parties[parsed_url.scheme + '_requests'].append(request['url'])
+            third_parties['num_{}_requests'.format(parsed_url.scheme)] += 1
         third_parties['fqdns'] = list(third_parties['fqdns'])
         third_parties['fqdns'].sort()
         self.result['third_parties'] = third_parties

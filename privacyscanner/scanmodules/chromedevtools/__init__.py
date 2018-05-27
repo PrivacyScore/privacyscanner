@@ -17,16 +17,15 @@ dependencies = []
 required_keys = ['site_url']
 
 
-class ChromeScan(FinalUrlMixin, RequestsMixin, CookieMixin, TLSDetailsMixin,
-                 CertificateMixin, GoogleAnalyticsMixin, ThirdPartyMixin,
-                 InsecureContentMixin, FailedRequestsMixin, ResponsesMixin,
-                 SecurityHeadersMixin, TrackerDetectMixin):
+class ChromeScan(FinalUrlMixin, CookieMixin, TLSDetailsMixin, CertificateMixin,
+                 GoogleAnalyticsMixin, ThirdPartyMixin, InsecureContentMixin,
+                 FailedRequestsMixin, ResponsesMixin, SecurityHeadersMixin,
+                 TrackerDetectMixin, RequestsMixin):
     def _initialize_scripts(self):
         pass
 
     def _extract_information(self):
         self._extract_final_url()
-        self._extract_requests()
         self._extract_cookies()
         self._extract_tls_details()
         self._extract_certificate()
@@ -38,6 +37,7 @@ class ChromeScan(FinalUrlMixin, RequestsMixin, CookieMixin, TLSDetailsMixin,
         # self._extract_responses()
         self._extract_security_headers()
         self._extract_trackers()
+        self._extract_requests()
 
     def _receive_log(self, log_type, message, call_stack):
         pass
