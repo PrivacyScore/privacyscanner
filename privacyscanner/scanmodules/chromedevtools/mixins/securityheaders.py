@@ -5,30 +5,28 @@ class SecurityHeadersMixin(AbstractChromeScan):
     def _extract_security_headers(self):
         response_lookup = {response['url']: response for response in self.response_log}
         response = response_lookup[self.result['final_url']]
-        headers_lower = {}
-        for key, value in response['headers'].items():
-            headers_lower[key.lower()] = value
+        headers = response['headers_lower']
 
         header_names = ['Referrer-Policy', 'X-Content-Type-Options',
                         'X-Frame-Options', 'Expect-CT',
                         'Access-Control-Allow-Origin']
         security_headers = {}
         for header_name in header_names:
-            security_headers[header_name] = self._get_header(headers_lower, header_name)
+            security_headers[header_name] = self._get_header(headers, header_name)
 
         hsts_value = None
-        if 'strict-transport-security' in headers_lower:
-            hsts_value = self._parse_hsts(headers_lower['strict-transport-security'])
+        if 'strict-transport-security' in headers:
+            hsts_value = self._parse_hsts(headers['strict-transport-security'])
         security_headers['Strict-Transport-Security'] = hsts_value
 
         csp_value = None
-        if 'content-security-policy' in headers_lower:
-            csp_value = self._parse_csp(headers_lower['content-security-policy'])
+        if 'content-security-policy' in headers:
+            csp_value = self._parse_csp(headers['content-security-policy'])
         security_headers['Content-Security-Policy'] = csp_value
 
         xss_protection = None
-        if 'x-xss-protection' in headers_lower:
-            xss_protection = self._parse_xss_protection(headers_lower['x-xss-protection'])
+        if 'x-xss-protection' in headers:
+            xss_protection = self._parse_xss_protection(headers['x-xss-protection'])
         security_headers['X-XSS-Protection'] = xss_protection
 
         self.result['security_headers'] = security_headers
