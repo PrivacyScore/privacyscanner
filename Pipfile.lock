@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "835d320d2c135c2e5e1dbbbb0dcc3b227c11f7b42def3bc05e79cd6b331ed6e5"
+            "sha256": "af7013665c9eaf1e5c9767707a5fe311dc71e644f9145a85ed09895b73c490fd"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -220,7 +220,7 @@
             ],
             "version": "==2.18"
         },
-        "re2": {
+        "pyre2": {
             "git": "https://github.com/andreasvc/pyre2.git"
         },
         "requests": {
@@ -270,10 +270,10 @@
         },
         "websocket-client": {
             "hashes": [
-                "sha256:188b68b14fdb2d8eb1a111f21b9ffd2dbf1dbc4e4c1d28cf2c37cdbf1dd1cae6",
-                "sha256:a453dc4dfa6e0db3d8fd7738a308a88effe6240c59f3226eb93e8f020c216149"
+                "sha256:18f1170e6a1b5463986739d9fd45c4308b0d025c1b2f9b88788d8f69e8a5eb4a",
+                "sha256:db70953ae4a064698b27ae56dcad84d0ee68b7b43cb40940f537738f38f510c1"
             ],
-            "version": "==0.47.0"
+            "version": "==0.48.0"
         }
     },
     "develop": {}
