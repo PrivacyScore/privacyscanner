@@ -1,3 +1,6 @@
+import dns.resolver
+import tldextract
+
 from ..base import AbstractChromeScan
 
 
@@ -8,8 +11,22 @@ class FailedRequestsMixin(AbstractChromeScan):
         for failed_request in self.failed_request_log:
             request = requests_lookup[failed_request['requestId']]
             error_text = failed_request['errorText']
+            extra = None
             if 'net::ERR_NAME_NOT_RESOLVED' in error_text:
                 error_type = 'dns-not-resolved'
+                # We could not resolve the IP address of this host. One
+                # reason might be, that the domain is not registered.
+                # To check whether this is the case, we check for the
+                # absence of a SOA record for the domain itself, i.e.,
+                # not the netloc of the URL. Unregistered domains
+                # should have no SOA entry, while registered should.
+                domain = tldextract.extract(request['url']).registered_domain
+                try:
+                    dns.resolver.query(domain, 'SOA')
+                    domain_registered = True
+                except dns.resolver.NXDOMAIN:
+                    domain_registered = False
+                extra = {'domain_registered': domain_registered}
             elif 'net::ERR_UNKNOWN_URL_SCHEME' in error_text:
                 error_type = 'unknown-url-scheme'
             elif 'net::ERR_ABORTED' in error_text:
@@ -22,6 +39,8 @@ class FailedRequestsMixin(AbstractChromeScan):
                 'url': request['url'],
                 'error_type': error_type,
             }
+            if extra is not None:
+                error.update(extra)
             if error_type == 'unknown':
                 error['error_text'] = error_text
             failed_requests.append(error)
