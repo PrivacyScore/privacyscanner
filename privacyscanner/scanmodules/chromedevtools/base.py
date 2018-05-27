@@ -251,6 +251,10 @@ class AbstractChromeScan:
         #print(kwargs)
 
     def _cb_response_received(self, response, **kwargs):
+        headers_lower = {}
+        for header_name, value in response['headers'].items():
+            headers_lower[header_name.lower()] = value
+        response['headers_lower'] = headers_lower
         self.response_log.append(response)
 
     def _cb_script_parsed(self, **script):
