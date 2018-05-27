@@ -28,3 +28,10 @@ class ThirdPartyMixin(AbstractChromeScan):
         third_parties['fqdns'] = list(third_parties['fqdns'])
         third_parties['fqdns'].sort()
         self.result['third_parties'] = third_parties
+
+        for cookie in self.result['cookies']:
+            domain = cookie['domain']
+            if domain.startswith('.'):
+                domain = domain[1:]
+            domain = tldextract.extract(domain).registered_domain
+            cookie['is_thirdparty'] = domain not in first_party_domains
