@@ -133,6 +133,7 @@ class AbstractChromeScan:
         self.request_log = []
         self.failed_request_log = []
         self.response_log = []
+        self.response_lookup = {}
         self.security_state_log = []
         self._page_loaded = False
         self._debugger_attached = False
@@ -255,6 +256,7 @@ class AbstractChromeScan:
         for header_name, value in response['headers'].items():
             headers_lower[header_name.lower()] = value
         response['headers_lower'] = headers_lower
+        self.response_lookup[response['url']] = response
         self.response_log.append(response)
 
     def _cb_script_parsed(self, **script):

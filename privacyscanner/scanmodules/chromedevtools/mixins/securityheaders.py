@@ -3,8 +3,7 @@ from ..base import AbstractChromeScan
 
 class SecurityHeadersMixin(AbstractChromeScan):
     def _extract_security_headers(self):
-        response_lookup = {response['url']: response for response in self.response_log}
-        response = response_lookup[self.result['final_url']]
+        response = self.response_lookup[self.result['final_url']]
         headers = response['headers_lower']
 
         header_names = ['Referrer-Policy', 'X-Content-Type-Options',

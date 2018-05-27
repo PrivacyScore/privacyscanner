@@ -4,8 +4,7 @@ from ..base import AbstractChromeScan
 
 class TLSDetailsMixin(AbstractChromeScan):
     def _extract_tls_details(self):
-        response_lookup = {response['url']: response for response in self.response_log}
-        response = response_lookup[self.result['final_url']]
+        response = self.response_lookup[self.result['final_url']]
 
         if 'securityDetails' not in response:
             self.result['tls'] = {
