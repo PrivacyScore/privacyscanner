@@ -19,6 +19,5 @@ class CookieStataMixin(AbstractChromeScan):
             if cookie['is_tracker']:
                 tracker = tldextract.extract(cookie['domain'])
                 cookietrackers.add(tracker.registered_domain)
-
-        self.result['cookiestats'] = dict(stats)
-        self.result['cookiestats']['trackers'] = list(sorted(cookietrackers))
+        stats['trackers'] = list(sorted(cookietrackers))
+        self.result['cookiestats'] = stats
