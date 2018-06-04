@@ -7,7 +7,8 @@ LIBRARY_JS = """
 (function() {
     return JSON.stringify({
         'jQuery': typeof(jQuery) !== 'undefined' ? jQuery.fn.jquery : null,
-        'React': typeof(React) !== 'undefined' ? React.version : null
+        'React': typeof(React) !== 'undefined' ? React.version : null,
+        'AngularJS': typeof(angular) !== 'undefined' ? angular.version.full : null
     });
 })();
 """
