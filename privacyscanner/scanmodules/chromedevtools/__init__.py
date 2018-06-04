@@ -11,6 +11,7 @@ from .mixins.responses import ResponsesMixin
 from .mixins.securityheaders import SecurityHeadersMixin
 from .mixins.trackerdetect import TrackerDetectMixin
 from .mixins.cookiestats import CookieStataMixin
+from .mixins.javascriptlibs import JavaScriptLibsMixin
 
 
 name = 'chromedevtools'
@@ -21,7 +22,8 @@ required_keys = ['site_url']
 class ChromeScan(FinalUrlMixin, CookieMixin, TLSDetailsMixin, CertificateMixin,
                  GoogleAnalyticsMixin, ThirdPartyMixin, InsecureContentMixin,
                  FailedRequestsMixin, ResponsesMixin, SecurityHeadersMixin,
-                 TrackerDetectMixin, RequestsMixin, CookieStataMixin):
+                 TrackerDetectMixin, RequestsMixin, CookieStataMixin,
+                 JavaScriptLibsMixin):
     def _initialize_scripts(self):
         pass
 
@@ -40,6 +42,7 @@ class ChromeScan(FinalUrlMixin, CookieMixin, TLSDetailsMixin, CertificateMixin,
         self._extract_trackers()
         self._extract_requests()
         self._extract_cookiestats()
+        self._extract_javascript_libs()
 
     def _receive_log(self, log_type, message, call_stack):
         pass
