@@ -8,22 +8,39 @@ TRACKER_JS = """
 JSON.stringify((function() {
     let info = {
         'has_ga_object': false,
+        'has_gat_object': false,
         'trackers': []
     };
-    if (typeof(ga) == 'undefined') {
+    if (typeof(ga) === 'undefined' && typeof(_gat) === 'undefined') {
         return info;
     }
-    ga(function() {
-        info['has_ga_object'] = true;
-        ga.getAll().forEach(function(tracker) {
-            let anonymize_ip = tracker.get('anonymizeIp');
+    
+    if (typeof(ga) !== 'undefined') {
+        ga(function() {
+            info['has_ga_object'] = true;
+            ga.getAll().forEach(function(tracker) {
+                let anonymize_ip = tracker.get('anonymizeIp');
+                info['trackers'].push({
+                    'name': tracker.get('name'),
+                    'tracking_id': tracker.get('trackingId'),
+                    'anonymize_ip': typeof(anonymize_ip) !== 'undefined' ? anonymize_ip : false
+                });
+            });
+        });
+    }
+    if (typeof(_gat) !== 'undefined') {
+        info['has_gat_object'] = true;
+        _gat._getTrackers().forEach(function(tracker) {
+            // There is only a global anonymize in the old _gat API
+            let anonymize_ip = _gat.w; 
             info['trackers'].push({
-                'name': tracker.get('name'),
-                'tracking_id': tracker.get('trackingId'),
+                'name': tracker._getName(),
+                'tracking_id': tracker._getAccount(),
                 'anonymize_ip': typeof(anonymize_ip) !== 'undefined' ? anonymize_ip : false
             });
         });
-    });
+    }
+    
     return info;
 })());
 """.lstrip()
@@ -32,12 +49,9 @@ JSON.stringify((function() {
 class GoogleAnalyticsMixin(AbstractChromeScan):
     def _extract_google_analytics(self):
         ga = {}
-
+        # TODO: The following can fail, provide fail safety here
         info = json.loads(self.tab.Runtime.evaluate(expression=TRACKER_JS)['result']['value'])
         ga.update(info)
-        if not ga['has_ga_object']:
-            del ga['trackers']
-
         num_requests_aip = 0
         num_requests_no_aip = 0
         has_ga_requests = False
@@ -53,11 +67,17 @@ class GoogleAnalyticsMixin(AbstractChromeScan):
         ga['has_requests'] = has_ga_requests
 
         if has_ga_requests:
+            if ga['trackers']:
+                all_set_js = all(tracker['anonymize_ip'] for tracker in ga['trackers']) # noqa
+            else:
+                all_set_js = None
             ga['anonymize'] = {
-                'all_set_js': all(tracker['anonymize_ip'] for tracker in ga['trackers']), # noqa
+                'all_set_js': all_set_js,
                 'num_requests_aip': num_requests_aip,
                 'num_requests_no_aip': num_requests_no_aip
             }
+        if not (ga['has_ga_object'] or ga['has_gat_object']):
+            del ga['trackers']
 
         self.result['google_analytics'] = ga
 
