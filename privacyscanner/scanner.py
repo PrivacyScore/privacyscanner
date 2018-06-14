@@ -140,6 +140,9 @@ def scan_site(args):
                 sys.exit(1)
             finally:
                 os.chdir(old_cwd)
+                with open(result_file, 'w') as f:
+                    json.dump(result.get_results(), f, indent=2, sort_keys=True)
+                    f.write('\n')
             logger.info('Finished {}'.format(mod.name))
     pprint.pprint(result.get_results())
 
