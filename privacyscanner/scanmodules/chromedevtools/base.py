@@ -196,12 +196,10 @@ class AbstractChromeScan:
 
         useragent = self.tab.Browser.getVersion()['userAgent'].replace('Headless', '')
         self.tab.Network.setUserAgentOverride(userAgent=useragent)
-        self.tab.Network.requestWillBeSent = self._cb_request_will_be_sent
-        self.tab.Network.responseReceived = self._cb_response_received
-        self.tab.Network.loadingFailed = self._cb_loading_failed
+        self._register_network_callbacks()
         self.tab.Network.enable()
 
-        self.tab.Security.securityStateChanged = self._cb_security_state_changed
+        self._register_security_callbacks()
         self.tab.Security.enable()
         self.tab.Security.setIgnoreCertificateErrors(ignore=True)
 
@@ -235,11 +233,11 @@ class AbstractChromeScan:
         time_start = time.time()
         while not self._page_loaded and time.time() - time_start < max_wait:
             self.tab.wait(0.5)
-        self.tab.wait(5)
-        self.tab.Network.disable()
-        self.tab.Security.disable()
+        self.tab.wait(15)
         self.tab.Page.disable()
         self.tab.Debugger.disable()
+        self._unregister_network_callbacks()
+        self._unregister_security_callbacks()
         self._extract_information()
         self.tab.stop()
 
@@ -306,6 +304,22 @@ class AbstractChromeScan:
 
     def _cb_loading_failed(self, **failed_request):
         self.failed_request_log.append(failed_request)
+
+    def _register_network_callbacks(self):
+        self.tab.Network.requestWillBeSent = self._cb_request_will_be_sent
+        self.tab.Network.responseReceived = self._cb_response_received
+        self.tab.Network.loadingFailed = self._cb_loading_failed
+
+    def _unregister_network_callbacks(self):
+        self.tab.Network.requestWillBeSent = None
+        self.tab.Network.responseReceived = None
+        self.tab.Network.loadingFailed = None
+
+    def _register_security_callbacks(self):
+        self.tab.Security.securityStateChanged = self._cb_security_state_changed
+
+    def _unregister_security_callbacks(self):
+        self.tab.Security.securityStateChanged = None
 
     def _extract_information(self):
         raise NotImplementedError('Please implement me')
