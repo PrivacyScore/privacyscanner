@@ -241,15 +241,16 @@ class AbstractChromeScan:
         self._extract_information()
         self.tab.stop()
 
-    def _cb_request_will_be_sent(self, request, requestId, **kwargs):
+    def _cb_request_will_be_sent(self, request, requestId, timestamp, **kwargs):
         # To avoid reparsing the URL in many places, we parse them all here
         request['parsed_url'] = urlparse(request['url'])
         request['requestId'] = requestId
+        request['timestamp'] = timestamp
         self.request_log.append(request)
-        #print(kwargs['requestId'])
-        #print(kwargs)
 
-    def _cb_response_received(self, response, **kwargs):
+    def _cb_response_received(self, response, requestId, timestamp, **kwargs):
+        response['requestId'] = requestId
+        response['timestamp'] = timestamp
         headers_lower = {}
         for header_name, value in response['headers'].items():
             headers_lower[header_name.lower()] = value
