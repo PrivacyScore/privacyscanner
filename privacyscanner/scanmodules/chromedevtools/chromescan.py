@@ -130,7 +130,7 @@ class ChromeBrowserStartupError(Exception):
 
 class ChromeBrowser:
     def __init__(self, debugging_port=9222):
-        self._debugging_port = 9222
+        self._debugging_port = debugging_port
 
     def __enter__(self):
         with tempfile.TemporaryDirectory() as temp_dir:
