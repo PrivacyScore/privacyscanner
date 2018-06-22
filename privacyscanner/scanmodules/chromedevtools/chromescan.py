@@ -124,6 +124,57 @@ ON_NEW_DOCUMENT_JAVASCRIPT = """
 ON_NEW_DOCUMENT_JAVASCRIPT_LINENO = 7
 
 
+class ChromeBrowserStartupError(Exception):
+    pass
+
+
+class ChromeBrowser:
+    def __init__(self, debugging_port=9222):
+        self._debugging_port = 9222
+
+    def __enter__(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            user_data_dir = Path(temp_dir) / 'chrome-profile'
+            user_data_dir.mkdir()
+            default_dir = user_data_dir / 'Default'
+            default_dir.mkdir()
+            with (default_dir / 'Preferences').open('w') as f:
+                json.dump(PREFS, f)
+            self._start_chrome(user_data_dir)
+            return self.browser
+
+    def _start_chrome(self, user_data_dir):
+        extra_opts = [
+            '--remote-debugging-port={}'.format(self._debugging_port),
+            '--user-data-dir={}'.format(user_data_dir)
+        ]
+        self._p = subprocess.Popen(['google-chrome'] + CHROME_OPTIONS + extra_opts,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+        self.browser = pychrome.Browser(url='http://127.0.0.1:{}'.format(
+            self._debugging_port))
+
+        # Wait until Chrome is ready
+        max_tries = 20
+        while max_tries > 0:
+            try:
+                self.browser.version()
+                break
+            except ConnectionError:
+                time.sleep(0.1)
+            max_tries -= 1
+        else:
+            raise ChromeBrowserStartupError('Could not connect to Chrome')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._p.terminate()
+        try:
+            self._p.wait(1)
+        except subprocess.TimeoutExpired:
+            self._p.kill()
+            self._p.wait()
+
+
 class ChromeScan:
     def __init__(self, result, logger, options, extractor_classes):
         self.result = result
@@ -140,50 +191,14 @@ class ChromeScan:
             self._extractors.append(extractor_class(self.page, result, logger, options))
 
     def scan(self):
-        with tempfile.TemporaryDirectory() as temp_dir:
-            user_data_dir = Path(temp_dir) / 'chrome-profile'
-            user_data_dir.mkdir()
-            default_dir = user_data_dir / 'Default'
-            default_dir.mkdir()
-            with (default_dir / 'Preferences').open('w') as f:
-                json.dump(PREFS, f)
-            self._run_chrome(user_data_dir)
-
-    def _run_chrome(self, user_data_dir):
-
-        debugging_port = 9222
-        extra_opts = [
-            '--remote-debugging-port={}'.format(debugging_port),
-            '--user-data-dir={}'.format(user_data_dir)
-            ]
-        p = subprocess.Popen(['google-chrome'] + CHROME_OPTIONS + extra_opts,
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         try:
-            self._browse(debugging_port)
-        finally:
-            p.terminate()
-            try:
-                p.wait(1)
-            except subprocess.TimeoutExpired:
-                p.kill()
-                p.wait()
+            with ChromeBrowser() as browser:
+                self.browser = browser
+                self._run_scan()
+        except ChromeBrowserStartupError:
+            self.result['chrome_error'] = True
 
-    def _browse(self, debugging_port):
-        self.browser = pychrome.Browser(url='http://127.0.0.1:{}'.format(debugging_port))
-
-        # Wait until Chrome is ready
-        max_tries = 20
-        while max_tries > 0:
-            try:
-                chrome_version = self.browser.version()
-                break
-            except ConnectionError:
-                time.sleep(0.1)
-            max_tries -= 1
-        else:
-            self.result['chrome_error'] = 'timeout'
-            return
-
+    def _run_scan(self):
         self._initialize_scripts()
 
         self.tab = self.browser.new_tab()
