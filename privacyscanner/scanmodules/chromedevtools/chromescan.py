@@ -176,67 +176,67 @@ class ChromeBrowser:
 
 
 class ChromeScan:
-    def __init__(self, result, logger, options, extractor_classes):
-        self.result = result
-        self.logger = logger
-        self.options = options
-        self.browser = None
+    def __init__(self, extractor_classes):
+        self._extractor_classes = extractor_classes
+
+    def scan(self, result, logger, options):
+        scanner = PageScanner(self._extractor_classes)
+        with ChromeBrowser() as browser:
+            return scanner.scan(browser, result, logger, options)
+
+
+class PageScanner:
+    def __init__(self, extractor_classes):
         self._page_loaded = False
         self._debugger_attached = False
         self._log_breakpoint = None
         self._extra_scripts = []
+        self._extractor_classes = extractor_classes
         self._extractors = []
-        self.page = Page()
-        for extractor_class in extractor_classes:
-            self._extractors.append(extractor_class(self.page, result, logger, options))
+        self._page = None
 
-    def scan(self):
-        try:
-            with ChromeBrowser() as browser:
-                self.browser = browser
-                self._run_scan()
-        except ChromeBrowserStartupError:
-            self.result['chrome_error'] = True
-
-    def _run_scan(self):
+    def scan(self, browser, result, logger, options):
         self._initialize_scripts()
 
-        self.tab = self.browser.new_tab()
-        self.page.tab = self.tab
-        self.tab.start()
+        self._tab = browser.new_tab()
+        self._tab.start()
 
-        self.tab.Emulation.setDeviceMetricsOverride(width=1920, height=1080,
-                                                    screenWidth=1920, screenHeight=1080,
-                                                    deviceScaleFactor=0, mobile=False)
+        self._page = Page(self._tab)
+        for extractor_class in self._extractor_classes:
+            self._extractors.append(extractor_class(self._page, result, logger, options))
 
-        useragent = self.tab.Browser.getVersion()['userAgent'].replace('Headless', '')
-        self.tab.Network.setUserAgentOverride(userAgent=useragent)
+        self._tab.Emulation.setDeviceMetricsOverride(width=1920, height=1080,
+                                                     screenWidth=1920, screenHeight=1080,
+                                                     deviceScaleFactor=0, mobile=False)
+
+        useragent = self._tab.Browser.getVersion()['userAgent'].replace('Headless', '')
+        self._tab.Network.setUserAgentOverride(userAgent=useragent)
         self._register_network_callbacks()
-        self.tab.Network.enable()
+        self._tab.Network.enable()
 
         self._register_security_callbacks()
-        self.tab.Security.enable()
-        self.tab.Security.setIgnoreCertificateErrors(ignore=True)
+        self._tab.Security.enable()
+        self._tab.Security.setIgnoreCertificateErrors(ignore=True)
 
-        self.tab.Page.loadEventFired = self._cb_load_event_fired
-        self.tab.Page.javascriptDialogOpening = self._cb_javascript_dialog_opening
+        self._tab.Page.loadEventFired = self._cb_load_event_fired
+        self._tab.Page.javascriptDialogOpening = self._cb_javascript_dialog_opening
         extra_scripts = '\n'.join('(function() { %s })();' % script
                                   for script in self._extra_scripts)
         source = ON_NEW_DOCUMENT_JAVASCRIPT.replace('__extra_scripts__', extra_scripts)
-        self.tab.Page.addScriptToEvaluateOnNewDocument(source=source)
-        self.tab.Page.enable()
+        self._tab.Page.addScriptToEvaluateOnNewDocument(source=source)
+        self._tab.Page.enable()
 
-        self.tab.Debugger.scriptParsed = self._cb_script_parsed
-        self.tab.Debugger.scriptFailedToParse = self._cb_script_failed_to_parse
-        self.tab.Debugger.paused = self._cb_paused
-        self.tab.Debugger.enable()
+        self._tab.Debugger.scriptParsed = self._cb_script_parsed
+        self._tab.Debugger.scriptFailedToParse = self._cb_script_failed_to_parse
+        self._tab.Debugger.paused = self._cb_paused
+        self._tab.Debugger.enable()
         # Pause the JavaScript before we navigate to the page. This
         # gives us some time to setup the debugger before any JavaScript
         # runs.
-        self.tab.Debugger.pause()
+        self._tab.Debugger.pause()
 
-        self.page.scan_start = datetime.utcnow()
-        self.tab.Page.navigate(url=self.result['site_url'], _timeout=30)
+        self._page.scan_start = datetime.utcnow()
+        self._tab.Page.navigate(url=result['site_url'], _timeout=30)
 
         # For some reason, we can not extract information reliably inside
         # a callback, therefore we wait until the load_event_fired
@@ -247,21 +247,21 @@ class ChromeScan:
         max_wait = 30
         time_start = time.time()
         while not self._page_loaded and time.time() - time_start < max_wait:
-            self.tab.wait(0.5)
-        self.tab.wait(15)
-        self.tab.Page.disable()
-        self.tab.Debugger.disable()
+            self._tab.wait(0.5)
+        self._tab.wait(15)
+        self._tab.Page.disable()
+        self._tab.Debugger.disable()
         self._unregister_network_callbacks()
         self._unregister_security_callbacks()
         self._extract_information()
-        self.tab.stop()
+        self._tab.stop()
 
     def _cb_request_will_be_sent(self, request, requestId, timestamp, **kwargs):
         # To avoid reparsing the URL in many places, we parse them all here
         request['parsed_url'] = urlparse(request['url'])
         request['requestId'] = requestId
         request['timestamp'] = timestamp
-        self.page.add_request(request)
+        self._page.add_request(request)
 
     def _cb_response_received(self, response, requestId, timestamp, **kwargs):
         response['requestId'] = requestId
@@ -270,19 +270,19 @@ class ChromeScan:
         for header_name, value in response['headers'].items():
             headers_lower[header_name.lower()] = value
         response['headers_lower'] = headers_lower
-        self.page.add_response(response)
+        self._page.add_response(response)
 
     def _cb_script_parsed(self, **script):
         # The first script loaded is our script we set via the method
         # Page.addScriptToEvaluateOnNewDocument. We want to to attach
         # to the log function, which will be used to analyse the page.
         if not self._debugger_attached:
-            self._log_breakpoint = self.tab.Debugger.setBreakpoint(location={
+            self._log_breakpoint = self._tab.Debugger.setBreakpoint(location={
                 'scriptId': script['scriptId'],
                 'lineNumber': ON_NEW_DOCUMENT_JAVASCRIPT_LINENO
             })['breakpointId']
             self._debugger_attached = True
-            self.tab.Debugger.resume()
+            self._tab.Debugger.resume()
 
     def _cb_script_failed_to_parse(self, **kwargs):
         pass
@@ -293,7 +293,7 @@ class ChromeScan:
             expression = ("typeof(arguments) !== 'undefined' ? "
                           "JSON.stringify(Array.from(arguments)) : 'null';")
             for call_frame in info['callFrames']:
-                args = json.loads(self.tab.Debugger.evaluateOnCallFrame(
+                args = json.loads(self._tab.Debugger.evaluateOnCallFrame(
                     callFrameId=call_frame['callFrameId'],
                     expression=expression)['result']['value'])
                 call_frames.append({
@@ -305,36 +305,36 @@ class ChromeScan:
                     },
                     'args': args
                 })
-            self.tab.Debugger.resume()
+            self._tab.Debugger.resume()
             self._receive_log(*call_frames[0]['args'], call_frames[1:])
 
     def _cb_load_event_fired(self, timestamp, **kwargs):
         self._page_loaded = True
 
     def _cb_javascript_dialog_opening(self, **kwargs):
-        self.tab.Page.handleJavaScriptDialog(accept=True)
+        self._tab.Page.handleJavaScriptDialog(accept=True)
 
     def _cb_security_state_changed(self, **state):
-        self.page.security_state_log.append(state)
+        self._page.security_state_log.append(state)
 
     def _cb_loading_failed(self, **failed_request):
-        self.page.failed_request_log.append(failed_request)
+        self._page.failed_request_log.append(failed_request)
 
     def _register_network_callbacks(self):
-        self.tab.Network.requestWillBeSent = self._cb_request_will_be_sent
-        self.tab.Network.responseReceived = self._cb_response_received
-        self.tab.Network.loadingFailed = self._cb_loading_failed
+        self._tab.Network.requestWillBeSent = self._cb_request_will_be_sent
+        self._tab.Network.responseReceived = self._cb_response_received
+        self._tab.Network.loadingFailed = self._cb_loading_failed
 
     def _unregister_network_callbacks(self):
-        self.tab.Network.requestWillBeSent = None
-        self.tab.Network.responseReceived = None
-        self.tab.Network.loadingFailed = None
+        self._tab.Network.requestWillBeSent = None
+        self._tab.Network.responseReceived = None
+        self._tab.Network.loadingFailed = None
 
     def _register_security_callbacks(self):
-        self.tab.Security.securityStateChanged = self._cb_security_state_changed
+        self._tab.Security.securityStateChanged = self._cb_security_state_changed
 
     def _unregister_security_callbacks(self):
-        self.tab.Security.securityStateChanged = None
+        self._tab.Security.securityStateChanged = None
 
     def _extract_information(self):
         for extractor in self._extractors:
@@ -355,9 +355,9 @@ class Page:
         self.failed_request_log = []
         self.response_log = []
         self.security_state_log = []
-        self._response_lookup = {}
         self.scan_start = None
         self.tab = tab
+        self._response_lookup = {}
 
     def add_request(self, request):
         self.response_log.append(request)

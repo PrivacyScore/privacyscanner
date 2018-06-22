@@ -17,5 +17,5 @@ def scan_site(result, logger, options):
                          InsecureContentExtractor, FailedRequestsExtractor,
                          SecurityHeadersExtractor, TrackerDetectExtractor,
                          CookieStatsExtractor, JavaScriptLibsExtractor]
-    chrome_scan = ChromeScan(result, logger, options, extractor_classes)
-    chrome_scan.scan()
+    chrome_scan = ChromeScan(extractor_classes)
+    chrome_scan.scan(result, logger, options)

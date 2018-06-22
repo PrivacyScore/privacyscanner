@@ -1,9 +1,9 @@
 class Extractor:
     def __init__(self, page, result, logger, options):
-        self.page = page
         self.result = result
         self.logger = logger
         self.options = options
+        self.page = page
 
     def extract_information(self):
         raise NotImplementedError('You have to implement extract_information() in {}'.format(
