@@ -1,6 +1,6 @@
 import json
 
-from ..base import AbstractChromeScan
+from .base import Extractor
 
 
 LIBRARY_JS = """
@@ -14,7 +14,7 @@ LIBRARY_JS = """
 """
 
 
-class JavaScriptLibsMixin(AbstractChromeScan):
-    def _extract_javascript_libs(self):
-        versions = json.loads(self.tab.Runtime.evaluate(expression=LIBRARY_JS)['result']['value'])
+class JavaScriptLibsExtractor(Extractor):
+    def extract_information(self):
+        versions = json.loads(self.page.tab.Runtime.evaluate(expression=LIBRARY_JS)['result']['value'])
         self.result['javascript_libraries'] = versions

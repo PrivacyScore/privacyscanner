@@ -1,10 +1,9 @@
-from ..base import AbstractChromeScan
+from .base import Extractor
 
-
-class CookieMixin(AbstractChromeScan):
-    def _extract_cookies(self):
-        cookies = self.tab.Network.getAllCookies()['cookies']
-        timestamp = int(self.scan_start.timestamp())
+class CookiesExtractor(Extractor):
+    def extract_information(self):
+        cookies = self.page.tab.Network.getAllCookies()['cookies']
+        timestamp = int(self.page.scan_start.timestamp())
         for cookie in cookies:
             if cookie['session']:
                 cookie['lifetime'] = -1

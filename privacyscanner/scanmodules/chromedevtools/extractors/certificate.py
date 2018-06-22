@@ -9,12 +9,12 @@ from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from cryptography.x509 import load_der_x509_certificate, NameOID
 
-from ..base import AbstractChromeScan
+from .base import Extractor
 
 
-class CertificateMixin(AbstractChromeScan):
-    def _extract_certificate(self):
-        explanations = self.security_state_log[-1]['explanations']
+class CertificateExtractor(Extractor):
+    def extract_information(self):
+        explanations = self.page.security_state_log[-1]['explanations']
         cert_chain = None
         for explanation in explanations:
             if 'certificate' in explanation:

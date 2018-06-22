@@ -1,7 +1,7 @@
 import json
 from urllib.parse import parse_qs
 
-from ..base import AbstractChromeScan
+from .base import Extractor
 
 
 TRACKER_JS = """
@@ -46,16 +46,16 @@ JSON.stringify((function() {
 """.lstrip()
 
 
-class GoogleAnalyticsMixin(AbstractChromeScan):
-    def _extract_google_analytics(self):
+class GoogleAnalyticsExtractor(Extractor):
+    def extract_information(self):
         ga = {}
         # TODO: The following can fail, provide fail safety here
-        info = json.loads(self.tab.Runtime.evaluate(expression=TRACKER_JS)['result']['value'])
+        info = json.loads(self.page.tab.Runtime.evaluate(expression=TRACKER_JS)['result']['value'])
         ga.update(info)
         num_requests_aip = 0
         num_requests_no_aip = 0
         has_ga_requests = False
-        for request in self.request_log:
+        for request in self.page.request_log:
             parsed_url = request['parsed_url']
             if self._is_google_request(parsed_url):
                 qs = parse_qs(parsed_url.query)

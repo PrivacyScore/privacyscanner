@@ -1,9 +1,12 @@
-from ..base import AbstractChromeScan
+from .base import Extractor
 
 
-class SecurityHeadersMixin(AbstractChromeScan):
-    def _extract_security_headers(self):
-        response = self.response_lookup[self.result['final_url']]
+class SecurityHeadersExtractor(Extractor):
+    def extract_information(self):
+        response = self.page.get_response_by_url(self.result['final_url'])
+        if response is None:
+            self.logger.error('Could not find response for final url')
+            return
         headers = response['headers_lower']
 
         header_names = ['Referrer-Policy', 'X-Content-Type-Options',

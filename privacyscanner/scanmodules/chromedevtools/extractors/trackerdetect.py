@@ -4,20 +4,20 @@ import pickle
 import tldextract
 from adblockparser import AdblockRules
 
-from ..base import AbstractChromeScan
+from .base import Extractor
 
 
 _adblock_rules_cache = None
 
 
-class TrackerDetectMixin(AbstractChromeScan):
-    def _extract_trackers(self):
+class TrackerDetectExtractor(Extractor):
+    def extract_information(self):
         self._load_rules()
         trackers_fqdn = set()
         trackers_domain = set()
         num_tracker_requests = 0
         blacklist = set()
-        for request in self.request_log:
+        for request in self.page.request_log:
             request['is_tracker'] = False
             if not request['is_thirdparty']:
                 continue

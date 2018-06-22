@@ -1,10 +1,13 @@
 from ..utils import camelcase_to_underscore
-from ..base import AbstractChromeScan
+from .base import Extractor
 
 
-class TLSDetailsMixin(AbstractChromeScan):
-    def _extract_tls_details(self):
-        response = self.response_lookup[self.result['final_url']]
+class TLSDetailsExtractor(Extractor):
+    def extract_information(self):
+        response = self.page.get_response_by_url(self.result['final_url'])
+        if response is None:
+            self.logger.error('Could not get response for final_url')
+            return
 
         if 'securityDetails' not in response:
             self.result['tls'] = {

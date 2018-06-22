@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 import pychrome
 from requests.exceptions import ConnectionError
 
+
 # See https://github.com/GoogleChrome/chrome-launcher/blob/master/docs/chrome-flags-for-tools.md
 # See also https://peter.sh/experiments/chromium-command-line-switches/
 CHROME_OPTIONS = [
@@ -123,22 +124,20 @@ ON_NEW_DOCUMENT_JAVASCRIPT = """
 ON_NEW_DOCUMENT_JAVASCRIPT_LINENO = 7
 
 
-class AbstractChromeScan:
-    def __init__(self, result, logger, options):
+class ChromeScan:
+    def __init__(self, result, logger, options, extractor_classes):
         self.result = result
         self.logger = logger
         self.options = options
         self.browser = None
-        self.scan_start = None
-        self.request_log = []
-        self.failed_request_log = []
-        self.response_log = []
-        self.response_lookup = {}
-        self.security_state_log = []
         self._page_loaded = False
         self._debugger_attached = False
         self._log_breakpoint = None
         self._extra_scripts = []
+        self._extractors = []
+        self.page = Page()
+        for extractor_class in extractor_classes:
+            self._extractors.append(extractor_class(self.page, result, logger, options))
 
     def scan(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -188,6 +187,7 @@ class AbstractChromeScan:
         self._initialize_scripts()
 
         self.tab = self.browser.new_tab()
+        self.page.tab = self.tab
         self.tab.start()
 
         self.tab.Emulation.setDeviceMetricsOverride(width=1920, height=1080,
@@ -220,7 +220,7 @@ class AbstractChromeScan:
         # runs.
         self.tab.Debugger.pause()
 
-        self.scan_start = datetime.utcnow()
+        self.page.scan_start = datetime.utcnow()
         self.tab.Page.navigate(url=self.result['site_url'], _timeout=30)
 
         # For some reason, we can not extract information reliably inside
@@ -246,7 +246,7 @@ class AbstractChromeScan:
         request['parsed_url'] = urlparse(request['url'])
         request['requestId'] = requestId
         request['timestamp'] = timestamp
-        self.request_log.append(request)
+        self.page.add_request(request)
 
     def _cb_response_received(self, response, requestId, timestamp, **kwargs):
         response['requestId'] = requestId
@@ -255,8 +255,7 @@ class AbstractChromeScan:
         for header_name, value in response['headers'].items():
             headers_lower[header_name.lower()] = value
         response['headers_lower'] = headers_lower
-        self.response_lookup[response['url']] = response
-        self.response_log.append(response)
+        self.page.add_response(response)
 
     def _cb_script_parsed(self, **script):
         # The first script loaded is our script we set via the method
@@ -301,10 +300,10 @@ class AbstractChromeScan:
         self.tab.Page.handleJavaScriptDialog(accept=True)
 
     def _cb_security_state_changed(self, **state):
-        self.security_state_log.append(state)
+        self.page.security_state_log.append(state)
 
     def _cb_loading_failed(self, **failed_request):
-        self.failed_request_log.append(failed_request)
+        self.page.failed_request_log.append(failed_request)
 
     def _register_network_callbacks(self):
         self.tab.Network.requestWillBeSent = self._cb_request_will_be_sent
@@ -323,10 +322,34 @@ class AbstractChromeScan:
         self.tab.Security.securityStateChanged = None
 
     def _extract_information(self):
-        raise NotImplementedError('Please implement me')
+        for extractor in self._extractors:
+            extractor.extract_information()
 
     def _receive_log(self, log_type, message, call_stack):
-        pass
+        for extractor in self._extractors:
+            extractor.receive_log(log_type, message, call_stack)
 
     def _initialize_scripts(self):
-        pass
+        for extractor in self._extractors:
+            extractor.register_javascript()
+
+
+class Page:
+    def __init__(self, tab=None):
+        self.request_log = []
+        self.failed_request_log = []
+        self.response_log = []
+        self.security_state_log = []
+        self._response_lookup = {}
+        self.scan_start = None
+        self.tab = tab
+
+    def add_request(self, request):
+        self.response_log.append(request)
+
+    def add_response(self, response):
+        self.response_log.append(response)
+        self._response_lookup[response['url']] = response
+
+    def get_response_by_url(self, url):
+        return self._response_lookup.get(url)

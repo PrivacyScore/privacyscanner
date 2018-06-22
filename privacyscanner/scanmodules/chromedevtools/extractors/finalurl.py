@@ -1,9 +1,10 @@
-from ..base import AbstractChromeScan
+from .base import Extractor
 
-class FinalUrlMixin(AbstractChromeScan):
-    def _extract_final_url(self):
-        response_urls = {response['url'] for response in self.response_log}
-        history = self.tab.Page.getNavigationHistory()
+
+class FinalUrlExtractor(Extractor):
+    def extract_information(self):
+        response_urls = {response['url'] for response in self.page.response_log}
+        history = self.page.tab.Page.getNavigationHistory()
         index = history['currentIndex']
         final_url = self.result['site_url']
         # We look for actual response because JavaScript might tamper with

@@ -1,14 +1,14 @@
 import dns.resolver
 import tldextract
 
-from ..base import AbstractChromeScan
+from .base import Extractor
 
 
-class FailedRequestsMixin(AbstractChromeScan):
-    def _extract_failed_requests(self):
-        requests_lookup = {request['requestId']: request for request in self.request_log}
+class FailedRequestsExtractor(Extractor):
+    def extract_information(self):
+        requests_lookup = {request['requestId']: request for request in self.page.request_log}
         failed_requests = []
-        for failed_request in self.failed_request_log:
+        for failed_request in self.page.failed_request_log:
             request = requests_lookup[failed_request['requestId']]
             error_text = failed_request['errorText']
             extra = None

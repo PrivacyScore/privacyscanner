@@ -1,14 +1,14 @@
-from ..base import AbstractChromeScan
+from .base import Extractor
 
 
-class RequestsMixin(AbstractChromeScan):
-    def _extract_requests(self):
+class RequestsExtractor(Extractor):
+    def extract_information(self):
         requests = []
 
-        for request in self.request_log:
+        for request in self.page.request_log:
             if request['url'].startswith('data:'):
                 continue
-            response = self.response_lookup.get(request['url'])
+            response = self.page.get_response_by_url(request['url'])
             request_dict = {
                 'url': request['url'],
                 'sets_cookie': self._get_sets_cookie(response),

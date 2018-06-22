@@ -1,10 +1,10 @@
 from ..utils import camelcase_to_underscore
-from ..base import AbstractChromeScan
+from .base import Extractor
 
 
-class InsecureContentMixin(AbstractChromeScan):
-    def _extract_security_state(self):
-        entry = self.security_state_log[-1]
+class InsecureContentExtractor(Extractor):
+    def extract_information(self):
+        entry = self.page.security_state_log[-1]
         insecure_content = {}
         # See https://chromedevtools.github.io/devtools-protocol/tot/Security#type-InsecureContentStatus
         properties = [

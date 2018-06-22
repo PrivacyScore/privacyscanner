@@ -1,12 +1,12 @@
 import tldextract
 
-from ..base import AbstractChromeScan
+from .base import Extractor
 
 
-class CookieStataMixin(AbstractChromeScan):
+class CookieStatsExtractor(Extractor):
     long_cookie_time = 24 * 60 * 60
 
-    def _extract_cookiestats(self):
+    def extract_information(self):
         stats = {}
         for party in ('first', 'third'):
             for duration in ('short', 'long'):
