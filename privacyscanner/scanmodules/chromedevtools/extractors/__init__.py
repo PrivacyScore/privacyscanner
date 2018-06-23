@@ -11,3 +11,4 @@ from .securityheaders import SecurityHeadersExtractor
 from .thirdparties import ThirdPartyExtractor
 from .tlsdetails import TLSDetailsExtractor
 from .trackerdetect import TrackerDetectExtractor
+from .screenshot import ScreenshotExtractor
