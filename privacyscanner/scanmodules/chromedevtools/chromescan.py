@@ -187,23 +187,17 @@ class ChromeScan:
 
 class PageScanner:
     def __init__(self, extractor_classes):
-        self._page_loaded = False
-        self._debugger_attached = False
-        self._log_breakpoint = None
-        self._extra_scripts = []
         self._extractor_classes = extractor_classes
-        self._extractors = []
-        self._page = None
+        self._reset()
 
     def scan(self, browser, result, logger, options):
-        self._initialize_scripts()
-
         self._tab = browser.new_tab()
         self._tab.start()
 
         self._page = Page(self._tab)
         for extractor_class in self._extractor_classes:
             self._extractors.append(extractor_class(self._page, result, logger, options))
+        self._initialize_scripts()
 
         self._tab.Emulation.setDeviceMetricsOverride(width=1920, height=1080,
                                                      screenWidth=1920, screenHeight=1080,
@@ -254,7 +248,11 @@ class PageScanner:
         self._unregister_network_callbacks()
         self._unregister_security_callbacks()
         self._extract_information()
+        self._tab.Network.disable()
+        self._tab.Security.disable()
         self._tab.stop()
+        browser.close_tab(self._tab)
+        self._reset()
 
     def _cb_request_will_be_sent(self, request, requestId, timestamp, **kwargs):
         # To avoid reparsing the URL in many places, we parse them all here
@@ -347,6 +345,14 @@ class PageScanner:
     def _initialize_scripts(self):
         for extractor in self._extractors:
             extractor.register_javascript()
+
+    def _reset(self):
+        self._page_loaded = False
+        self._debugger_attached = False
+        self._log_breakpoint = None
+        self._page = None
+        self._extractors = []
+        self._extra_scripts = []
 
 
 class Page:
