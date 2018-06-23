@@ -197,7 +197,7 @@ class PageScanner:
         self._page = Page(self._tab)
         for extractor_class in self._extractor_classes:
             self._extractors.append(extractor_class(self._page, result, logger, options))
-        self._initialize_scripts()
+        self._register_javascript()
 
         self._tab.Emulation.setDeviceMetricsOverride(width=1920, height=1080,
                                                      screenWidth=1920, screenHeight=1080,
@@ -342,7 +342,7 @@ class PageScanner:
         for extractor in self._extractors:
             extractor.receive_log(log_type, message, call_stack)
 
-    def _initialize_scripts(self):
+    def _register_javascript(self):
         for extractor in self._extractors:
             extractor.register_javascript()
 
