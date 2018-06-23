@@ -9,9 +9,13 @@ class FailedRequestsExtractor(Extractor):
         requests_lookup = {request['requestId']: request for request in self.page.request_log}
         failed_requests = []
         for failed_request in self.page.failed_request_log:
-            request = requests_lookup[failed_request['requestId']]
             error_text = failed_request['errorText']
+            if 'net::ERR_ABORTED' in error_text:
+                # Requests that were aborted by the site (e.g. a XHR
+                # request that was canceled) are not considered failed.
+                continue
             extra = None
+            request = requests_lookup[failed_request['requestId']]
             if 'net::ERR_NAME_NOT_RESOLVED' in error_text:
                 error_type = 'dns-not-resolved'
                 # We could not resolve the IP address of this host. One
@@ -29,10 +33,6 @@ class FailedRequestsExtractor(Extractor):
                 extra = {'domain_registered': domain_registered}
             elif 'net::ERR_UNKNOWN_URL_SCHEME' in error_text:
                 error_type = 'unknown-url-scheme'
-            elif 'net::ERR_ABORTED' in error_text:
-                # Requests that were aborted by the site (e.g. a XHR
-                # request that was canceled) are not considered failed.
-                continue
             else:
                 error_type = 'unknown'
             error = {
