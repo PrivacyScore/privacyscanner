@@ -5,7 +5,7 @@ class CookiesExtractor(Extractor):
         cookies = self.page.tab.Network.getAllCookies()['cookies']
         timestamp = int(self.page.scan_start.timestamp())
         for cookie in cookies:
-            if cookie['session']:
+            if cookie['session'] or cookie['expires'] is None:
                 cookie['lifetime'] = -1
             else:
                 cookie['lifetime'] = cookie['expires'] - timestamp
