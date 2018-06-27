@@ -10,9 +10,11 @@ class FailedRequestsExtractor(Extractor):
         failed_requests = []
         for failed_request in self.page.failed_request_log:
             error_text = failed_request['errorText']
-            if 'net::ERR_ABORTED' in error_text:
+            valid_errors = ('net::ERR_CACHE_MISS', 'net::ERR_ABORTED')
+            if any(error in error_text for error in valid_errors):
                 # Requests that were aborted by the site (e.g. a XHR
-                # request that was canceled) are not considered failed.
+                # request that was canceled) and cache misses are
+                # not considered failed.
                 continue
             extra = None
             request = requests_lookup[failed_request['requestId']]
