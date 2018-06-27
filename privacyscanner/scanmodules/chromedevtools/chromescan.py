@@ -1,7 +1,9 @@
 import json
+import random
 import subprocess
 import tempfile
 import time
+import warnings
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
@@ -201,9 +203,10 @@ class PageScanner:
             self._extractors.append(extractor_class(self._page, result, logger, options))
         self._register_javascript()
 
-        self._tab.Emulation.setDeviceMetricsOverride(width=1920, height=1080,
-                                                     screenWidth=1920, screenHeight=1080,
-                                                     deviceScaleFactor=0, mobile=False)
+        if self._is_headless():
+            self._tab.Emulation.setDeviceMetricsOverride(
+                width=1920, height=1080, screenWidth=1920, screenHeight=1080,
+                deviceScaleFactor=0, mobile=False)
 
         useragent = self._tab.Browser.getVersion()['userAgent'].replace('Headless', '')
         self._tab.Network.setUserAgentOverride(userAgent=useragent)
@@ -244,7 +247,8 @@ class PageScanner:
         time_start = time.time()
         while not self._page_loaded and time.time() - time_start < max_wait:
             self._tab.wait(0.5)
-        self._tab.wait(15)
+        self._page_interaction()
+        self._tab.wait(5)
         self._tab.Page.disable()
         self._tab.Debugger.disable()
         self._unregister_network_callbacks()
@@ -335,6 +339,37 @@ class PageScanner:
 
     def _unregister_security_callbacks(self):
         self._tab.Security.securityStateChanged = None
+
+    def _is_headless(self):
+        try:
+            # The fact that Browser.getWindowsBounds is not available
+            # in headless mode is exploited here. Unfortunately, it
+            # also shows a warning, which we suppress here.
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                self._tab.Browser.getWindowBounds(windowId=1)
+        except pychrome.exceptions.CallMethodException:
+            return True
+        return False
+
+    def _page_interaction(self):
+        layout = self._tab.Page.getLayoutMetrics()
+        height = layout['contentSize']['height']
+        viewport_height = layout['visualViewport']['clientHeight']
+        viewport_width = layout['visualViewport']['clientWidth']
+        x = random.randint(0, viewport_width - 1)
+        y = random.randint(0, viewport_height - 1)
+        max_scrolldown = random.randint(int(height / 2.5), int(height / 1.5))
+        while True:
+            distance = random.randint(100, 300)
+            speed = random.randint(800, 1200)
+            self._tab.Input.synthesizeScrollGesture(
+                x=x, y=y, yDistance=-distance, speed=speed)
+            layout = self._tab.Page.getLayoutMetrics()
+            page_y = layout['visualViewport']['pageY']
+            if page_y + viewport_height >= max_scrolldown:
+                break
+            self._tab.wait(random.uniform(0.050, 0.150))
 
     def _extract_information(self):
         for extractor in self._extractors:
