@@ -133,15 +133,16 @@ class ChromeBrowser:
         self._debugging_port = debugging_port
 
     def __enter__(self):
-        with tempfile.TemporaryDirectory() as temp_dir:
-            user_data_dir = Path(temp_dir) / 'chrome-profile'
-            user_data_dir.mkdir()
-            default_dir = user_data_dir / 'Default'
-            default_dir.mkdir()
-            with (default_dir / 'Preferences').open('w') as f:
-                json.dump(PREFS, f)
-            self._start_chrome(user_data_dir)
-            return self.browser
+        self._temp_dir = tempfile.TemporaryDirectory()
+        temp_dirname = self._temp_dir.name
+        user_data_dir = Path(temp_dirname) / 'chrome-profile'
+        user_data_dir.mkdir()
+        default_dir = user_data_dir / 'Default'
+        default_dir.mkdir()
+        with (default_dir / 'Preferences').open('w') as f:
+            json.dump(PREFS, f)
+        self._start_chrome(user_data_dir)
+        return self.browser
 
     def _start_chrome(self, user_data_dir):
         extra_opts = [
@@ -173,6 +174,7 @@ class ChromeBrowser:
         except subprocess.TimeoutExpired:
             self._p.kill()
             self._p.wait()
+        self._temp_dir.cleanup()
 
 
 class ChromeScan:
