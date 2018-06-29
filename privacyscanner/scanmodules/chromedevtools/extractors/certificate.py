@@ -34,7 +34,7 @@ class CertificateExtractor(Extractor):
             key_type = 'DSA'
         elif isinstance(public_key, EllipticCurvePublicKey):
             key_type = 'ECC'
-            key_info['curve'] = public_key.curve
+            key_info['curve'] = public_key.curve.name
         else:
             raise ValueError('Invalid key type.')
         key_info['type'] = key_type
