@@ -17,7 +17,11 @@ class FailedRequestsExtractor(Extractor):
                 # not considered failed.
                 continue
             extra = None
-            request = requests_lookup[failed_request['requestId']]
+            try:
+                request = requests_lookup[failed_request['requestId']]
+            except KeyError:
+                self.logger.error('Could not find request: {}'.format(failed_request))
+                continue
             if 'net::ERR_NAME_NOT_RESOLVED' in error_text:
                 error_type = 'dns-not-resolved'
                 # We could not resolve the IP address of this host. One
