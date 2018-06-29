@@ -17,6 +17,7 @@ pychrome = "*"
 cryptography = "*"
 cython = "*"
 "pyre2" = {git = "https://github.com/andreasvc/pyre2.git"}
+"pillow" = "*"
 
 [requires]
 python_version = "3.6"
