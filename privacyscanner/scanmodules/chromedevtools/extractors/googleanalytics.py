@@ -48,10 +48,16 @@ JSON.stringify((function() {
 
 class GoogleAnalyticsExtractor(Extractor):
     def extract_information(self):
-        ga = {}
-        # TODO: The following can fail, provide fail safety here
-        info = json.loads(self.page.tab.Runtime.evaluate(expression=TRACKER_JS)['result']['value'])
-        ga.update(info)
+        ga = {
+            'has_ga_object': False,
+            'has_gat_object': False,
+            'trackers': []
+        }
+        try:
+            info = json.loads(self.page.tab.Runtime.evaluate(expression=TRACKER_JS)['result']['value'])
+            ga.update(info)
+        except KeyError:
+            pass
         num_requests_aip = 0
         num_requests_no_aip = 0
         has_ga_requests = False
