@@ -1,6 +1,17 @@
 from pathlib import Path
 import pickle
+import sys
 
+# This is a somewhat ugly hack. There are several implementations or re2
+# but none of them except cffi_re2 can be installed without pain. However,
+# adblockparser checks whether he can import re2 and not whether it can
+# import cffi_re2. Therefore we put cffi_re2 into sys.modules as re2
+# so adblockparser will import cffi_re2 when importing re2.
+try:
+    import cffi_re2
+    sys.modules['re2'] = cffi_re2
+except ModuleNotFoundError:
+    pass
 import tldextract
 from adblockparser import AdblockRules
 
@@ -84,7 +95,7 @@ class TrackerDetectExtractor(Extractor):
                     if line.startswith('@@'):
                         continue
                     lines.append(line)
-            rules = AdblockRules(lines, use_re2=True)
+            rules = AdblockRules(lines)
             if cache_file:
                 with cache_file.open('wb') as f:
                     pickle.dump(rules, f, pickle.HIGHEST_PROTOCOL)
