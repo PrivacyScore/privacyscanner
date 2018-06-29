@@ -359,16 +359,25 @@ class PageScanner:
         viewport_width = layout['visualViewport']['clientWidth']
         x = random.randint(0, viewport_width - 1)
         y = random.randint(0, viewport_height - 1)
+        # Avoid scrolling too far, since some sites load the start page
+        # when scrolling to the bottom (e.g. sueddeutsche.de)
         max_scrolldown = random.randint(int(height / 2.5), int(height / 1.5))
+        last_page_y = 0
         while True:
             distance = random.randint(100, 300)
-            speed = random.randint(800, 1200)
-            self._tab.Input.synthesizeScrollGesture(
-                x=x, y=y, yDistance=-distance, speed=speed)
+            self._tab.Input.dispatchMouseEvent(
+                type='mouseWheel', x=x, y=y, deltaX=0, deltaY=distance)
             layout = self._tab.Page.getLayoutMetrics()
             page_y = layout['visualViewport']['pageY']
-            if page_y + viewport_height >= max_scrolldown:
+            # We scroll down until we have reached max_scrolldown, which was
+            # obtained in the beginning. This prevents endless scrolling for
+            # sites that dynamically load content (and therefore change their
+            # height). In addition we check if the page indeed scrolled; this
+            # prevents endless scrolling in case the content's height has
+            # decreased.
+            if page_y + viewport_height >= max_scrolldown or page_y <= last_page_y:
                 break
+            last_page_y = page_y
             self._tab.wait(random.uniform(0.050, 0.150))
 
     def _extract_information(self):
