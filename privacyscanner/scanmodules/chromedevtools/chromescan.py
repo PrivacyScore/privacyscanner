@@ -83,7 +83,7 @@ CHROME_OPTIONS = [
     '--disable-gpu',
 
     # Run headless
-    '--headless'
+#    '--headless'
 ]
 
 PREFS = {
@@ -403,7 +403,7 @@ class Page:
         self._response_lookup = {}
 
     def add_request(self, request):
-        self.response_log.append(request)
+        self.request_log.append(request)
 
     def add_response(self, response):
         self.response_log.append(response)
