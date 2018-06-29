@@ -83,7 +83,7 @@ CHROME_OPTIONS = [
     '--disable-gpu',
 
     # Run headless
-#    '--headless'
+    '--headless'
 ]
 
 PREFS = {
