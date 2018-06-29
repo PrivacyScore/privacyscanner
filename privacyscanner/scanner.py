@@ -39,8 +39,8 @@ def load_config(config_file):
         else:
             return config
     try:
-        with open(config_file, 'r') as f:
-            code = compile(f.read(), config_file, 'exec')
+        with config_file.open() as f:
+            code = compile(f.read(), config_file.name, 'exec')
             exec(code, {}, config)
             return config
     except IOError as e:
@@ -94,7 +94,7 @@ def scan_site(args):
         else:
             result_json.update(import_json)
     try:
-        with open(result_file, 'w') as f:
+        with result_file.open('w') as f:
             json.dump(result_json, f, indent=2)
             f.write('\n')
     except IOError as e:
@@ -124,7 +124,8 @@ def scan_site(args):
     stream_handler = ScanStreamHandler()
     for scan_module_name in scan_module_names:
         mod = scan_modules[scan_module_name]
-        file_handler = ScanFileHandler(results_dir / (mod.name + '.log'))
+        log_filename = (results_dir / (mod.name + '.log')).name
+        file_handler = ScanFileHandler(log_filename)
         logger = logging.Logger(mod.name)
         logger.addHandler(stream_handler)
         logger.addHandler(file_handler)
@@ -140,7 +141,7 @@ def scan_site(args):
                 sys.exit(1)
             finally:
                 os.chdir(old_cwd)
-                with open(result_file, 'w') as f:
+                with result_file.open('w') as f:
                     json.dump(result.get_results(), f, indent=2, sort_keys=True)
                     f.write('\n')
             logger.info('Finished {}'.format(mod.name))
