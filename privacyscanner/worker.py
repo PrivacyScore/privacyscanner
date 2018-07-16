@@ -23,7 +23,7 @@ UPDATE scanner_scaninfo
 SET scan_host = %s,
     time_started = %s,
     num_tries = num_tries + 1
-WHERE scan_id = %s AND scan_module = %s AND num_tries = %s
+WHERE scan_id = %s AND scan_module = %s
 """
 
 _JOB_FINISHED_QUERY = """
@@ -36,7 +36,7 @@ _JOB_FAILED_QUERY = """
 UPDATE scanner_scaninfo
 SET scan_host = NULL,
     time_started = NULL
-WHERE scan_id = %s AND scan_module = %s AND num_tries = %s
+WHERE scan_id = %s AND scan_module = %s
 """
 
 _LOG_QUERY = """
@@ -168,7 +168,7 @@ class WorkerMaster:
                 if action == 'job_started':
                     scan_id, scan_module_name, time_started, num_tries = args
                     worker_info.notify_job_started(scan_id, scan_module_name)
-                    self._event_job_started(scan_id, scan_module_name, time_started, num_tries)
+                    self._event_job_started(scan_id, scan_module_name, time_started)
                 elif action == 'job_finished':
                     self._event_job_finished(
                         worker_info.scan_id, worker_info.scan_module, time_finished=args[0])
@@ -188,8 +188,8 @@ class WorkerMaster:
             except queue.Empty:
                 break
 
-    def _event_job_started(self, scan_id, scan_module_name, time_started, num_tries):
-        params = (self.name, time_started, scan_id, scan_module_name, num_tries)
+    def _event_job_started(self, scan_id, scan_module_name, time_started):
+        params = (self.name, time_started, scan_id, scan_module_name)
         self._execute_sql_autocommit(_JOB_STARTED_QUERY, params)
 
     def _event_job_finished(self, scan_id, scan_module_name, time_finished):
