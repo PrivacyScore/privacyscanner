@@ -158,7 +158,7 @@ class ChromeBrowser:
             self._debugging_port))
 
         # Wait until Chrome is ready
-        max_tries = 20
+        max_tries = 50
         while max_tries > 0:
             try:
                 self.browser.version()
