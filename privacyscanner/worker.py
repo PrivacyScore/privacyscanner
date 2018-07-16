@@ -295,7 +295,7 @@ class Worker:
                     if self._raven_client:
                         self._raven_client.captureException(tags={
                             'scan_id': job.scan_id,
-                            'module_name': job.scan_module.name
+                            'scan_module_name': job.scan_module.name
                         })
                 else:
                     self._job_queue.report_result(result.get_updates())
