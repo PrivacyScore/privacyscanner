@@ -286,11 +286,6 @@ class Worker:
             with tempfile.TemporaryDirectory() as temp_dir:
                 old_cwd = os.getcwd()
                 os.chdir(temp_dir)
-                if self._raven_client:
-                    self._raven_client.context.merge({'scanjob': {
-                        'scan_id': job.scan_id,
-                        'module_name': job.scan_module.name
-                    }})
                 try:
                     job.scan_module.scan_site(result, logger, job.options)
                 except Exception:
@@ -298,13 +293,14 @@ class Worker:
                     self._job_queue.report_failure()
                     self._notify_master('job_failed', (datetime.today(), ))
                     if self._raven_client:
-                        self._raven_client.captureException()
+                        self._raven_client.captureException(tags={
+                            'scan_id': job.scan_id,
+                            'module_name': job.scan_module.name
+                        })
                 else:
                     self._job_queue.report_result(result.get_updates())
                     self._notify_master('job_finished', (datetime.today(), ))
                 finally:
-                    if self._raven_client:
-                        self._raven_client.context.clear()
                     os.chdir(old_cwd)
             self._max_executions -= 1
 
