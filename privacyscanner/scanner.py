@@ -12,6 +12,11 @@ from urllib.parse import urlparse
 from pathlib import Path
 
 from toposort import toposort, toposort_flatten
+try:
+    import raven
+    has_raven = True
+except ModuleNotFoundError:
+    has_raven = False
 
 from privacyscanner.filehandlers import DirectoryFileHandler
 from privacyscanner.result import Result
@@ -58,10 +63,17 @@ def run_workers(args):
     from .worker import WorkerMaster
 
     config = load_config(args.config)
+    raven_client = None
+    if has_raven and config['RAVEN_DSN']:
+        raven_client = raven.Client(config['RAVEN_DSN'])
     master = WorkerMaster(config['QUEUE_DB_DSN'], config['SCAN_MODULES'],
                           config['SCAN_MODULE_OPTIONS'], config['NUM_WORKERS'],
-                          config['MAX_EXECUTIONS'], config['MAX_EXECUTION_TIMES'])
-    master.start()
+                          config['MAX_EXECUTIONS'], config['MAX_EXECUTION_TIMES'],
+                          config['RAVEN_DSN'])
+    try:
+        master.start()
+    except Exception:
+        raven_client.captureException()
 
 
 def scan_site(args):

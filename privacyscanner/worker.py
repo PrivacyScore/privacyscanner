@@ -10,6 +10,11 @@ import socket
 from datetime import datetime
 
 import psycopg2
+try:
+    import raven
+    has_raven = True
+except ModuleNotFoundError:
+    has_raven = False
 
 from privacyscanner.filehandlers import NoOpFileHandler
 from privacyscanner.jobqueue import JobQueue
@@ -80,7 +85,8 @@ class WorkerInfo:
 
 class WorkerMaster:
     def __init__(self, db_dsn, scan_module_list, scan_module_options=None,
-                 num_workers=2, max_executions=100, max_execution_times=None):
+                 num_workers=2, max_executions=100, max_execution_times=None,
+                 raven_dsn=None):
         self.name = socket.gethostname()
         self._db_dsn = db_dsn
         self.scan_module_list = scan_module_list
@@ -93,6 +99,7 @@ class WorkerMaster:
             max_execution_times = {None: None}
         self.max_execution_times = max_execution_times
         self.max_execution_time = max_execution_times.get(None)
+        self._raven_dsn = raven_dsn
         self._workers = {}
         self._terminated_workers = set()
         self._running = False
@@ -151,9 +158,12 @@ class WorkerMaster:
             pid = os.fork()
             if pid == 0:
                 self._clear_signals()
+                raven_client = None
+                if has_raven and self._raven_dsn:
+                    raven_client = raven.Client(self._raven_dsn)
                 worker = Worker(ppid, self._db_dsn, self.scan_module_list,
                                 self.scan_module_options, self.max_executions,
-                                self._queue, stop_event)
+                                self._queue, stop_event, raven_client)
                 worker.run()
                 sys.exit(0)
             else:
@@ -252,12 +262,13 @@ class WorkerMaster:
 
 class Worker:
     def __init__(self, ppid, db_dsn, scan_module_list, scan_module_options,
-                 max_executions, queue, stop_event):
+                 max_executions, queue, stop_event, raven_client):
         self._pid = os.getpid()
         self._ppid = ppid
         self._max_executions = max_executions
         self._queue = queue
         self._stop_event = stop_event
+        self._raven_client = raven_client
         self._old_sigterm = signal.SIG_DFL
         self._old_sigint = signal.SIG_DFL
         self._job_queue = JobQueue(db_dsn, load_modules(scan_module_list),
@@ -275,16 +286,25 @@ class Worker:
             with tempfile.TemporaryDirectory() as temp_dir:
                 old_cwd = os.getcwd()
                 os.chdir(temp_dir)
+                if self._raven_client:
+                    self._raven_client.context.merge({'scanjob': {
+                        'scan_id': job.scan_id,
+                        'module_name': job.scan_module.name
+                    }})
                 try:
                     job.scan_module.scan_site(result, logger, job.options)
                 except Exception:
                     logger.exception('Scan module `{}` failed.'.format(job.scan_module.name))
                     self._job_queue.report_failure()
                     self._notify_master('job_failed', (datetime.today(), ))
+                    if self._raven_client:
+                        self._raven_client.captureException()
                 else:
                     self._job_queue.report_result(result.get_updates())
                     self._notify_master('job_finished', (datetime.today(), ))
                 finally:
+                    if self._raven_client:
+                        self._raven_client.context.clear()
                     os.chdir(old_cwd)
             self._max_executions -= 1
 
