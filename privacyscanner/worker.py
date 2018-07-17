@@ -128,6 +128,7 @@ class WorkerMaster:
         for worker_info in self._workers.values():
             worker_info.stop()
         while not self._force_stop and self._workers:
+            self._check_hanging()
             self._remove_workers()
             time.sleep(0.25)
             sys.stdout.buffer.write(b'\033[K')
