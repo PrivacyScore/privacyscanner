@@ -307,6 +307,12 @@ class Worker:
 
 
 class WorkerProcess(multiprocessing.Process):
+    def run(self):
+        # We do not want our worker to receive the signals our parent (master)
+        # gets. Therefore move it into an own process group.
+        os.setpgid(0, 0)
+        super().run()
+
     def kill(self):
         if self.exitcode is None:
             try:
