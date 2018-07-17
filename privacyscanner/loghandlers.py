@@ -1,17 +1,17 @@
 import logging
 
 
-class WorkerQueueHandler(logging.Handler):
-    def __init__(self, pid, queue, *args, **kwargs):
+class WorkerWritePipeHandler(logging.Handler):
+    def __init__(self, pid, write_pipe, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.pid = pid
-        self.queue = queue
+        self.write_pipe = write_pipe
         fmt = '%(message)s (%(filename)s:%(lineno)d)'
         self.setFormatter(logging.Formatter(fmt))
 
     def emit(self, record):
         message = self.format(record)
-        self.queue.put((self.pid, 'log', (record.created, record.levelno, message)))
+        self.write_pipe.send((self.pid, 'log', (record.created, record.levelno, message)))
 
 
 class ScanFileHandler(logging.FileHandler):

@@ -2,12 +2,11 @@ import logging
 import multiprocessing
 import os
 import signal
-import sys
 import tempfile
 import time
-import queue
 import socket
 from datetime import datetime
+from multiprocessing.connection import wait
 
 import psycopg2
 try:
@@ -20,7 +19,7 @@ from privacyscanner.filehandlers import NoOpFileHandler
 from privacyscanner.jobqueue import JobQueue
 from privacyscanner.result import Result
 from privacyscanner.scanmodules import load_modules
-from privacyscanner.loghandlers import WorkerQueueHandler, ScanStreamHandler
+from privacyscanner.loghandlers import WorkerWritePipeHandler, ScanStreamHandler
 
 
 _JOB_STARTED_QUERY = """
@@ -51,14 +50,19 @@ VALUES (%s, %s, %s, %s, %s, %s)
 
 
 class WorkerInfo:
-    def __init__(self, pid, stop_event):
-        self.pid = pid
+    def __init__(self, process, read_pipe, stop_event):
+        self.process = process
+        self.read_pipe = read_pipe
         self.stop_event = stop_event
         self.scan_id = None
         self.scan_module = None
         self._heartbeat = None
         self._last_execution_time = None
         self.ping()
+
+    @property
+    def pid(self):
+        return self.process.pid
 
     def ping(self):
         self._heartbeat = time.time()
@@ -101,39 +105,33 @@ class WorkerMaster:
         self.max_execution_time = max_execution_times.get(None)
         self._raven_dsn = raven_dsn
         self._workers = {}
-        self._terminated_workers = set()
+        self._terminated_worker_pids = set()
         self._running = False
         self._force_stop = False
-        self._queue = multiprocessing.Queue()
         self._conn = None
         self._connect()
 
     def start(self):
-        signal.signal(signal.SIGCHLD, self._handle_signal_child)
+        multiprocessing.set_start_method('spawn')
         signal.signal(signal.SIGINT, self._handle_signal_stop)
         signal.signal(signal.SIGTERM, self._handle_signal_stop)
         self._running = True
         while self._running:
-            self._fork_workers()
+            self._start_workers()
             self._process_queue()
             self._check_hanging()
             self._remove_workers()
             time.sleep(0.25)
         print('\nGently asking workers to stop ...')
-        for pid, worker_info in self._workers.items():
+        for worker_info in self._workers.values():
             worker_info.stop()
         while not self._force_stop and self._workers:
             self._remove_workers()
             time.sleep(0.25)
         if self._workers:
             print('Forcefully killing workers ...')
-            for pid in list(self._workers.keys()):
-                try:
-                    os.kill(pid, signal.SIGKILL)
-                except ProcessLookupError:
-                    del self._workers[pid]
-            for pid in self._workers.keys():
-                os.waitpid(pid, 0)
+            for worker_info in self._workers.values():
+                worker_info.process.kill()
         print('All workers stopped. Shutting down ...')
 
     def stop(self):
@@ -146,54 +144,51 @@ class WorkerMaster:
         if self._conn is None or self._conn.closed:
             self._conn = psycopg2.connect(self._db_dsn)
 
-    def _clear_signals(self):
-        signal.signal(signal.SIGCHLD, signal.SIG_DFL)
-        signal.signal(signal.SIGINT, signal.SIG_DFL)
-        signal.signal(signal.SIGTERM, signal.SIG_DFL)
-
-    def _fork_workers(self):
+    def _start_workers(self):
         ppid = os.getpid()
         for i in range(self.num_workers - len(self._workers)):
             stop_event = multiprocessing.Event()
-            pid = os.fork()
-            if pid == 0:
-                self._clear_signals()
-                worker = Worker(ppid, self._db_dsn, self.scan_module_list,
-                                self.scan_module_options, self.max_executions,
-                                self._queue, stop_event, self._raven_dsn)
-                worker.run()
-                sys.exit(0)
-            else:
-                self._workers[pid] = WorkerInfo(pid, stop_event)
+            read_pipe, write_pipe = multiprocessing.Pipe(duplex=False)
+            args = (ppid, self._db_dsn, self.scan_module_list,
+                    self.scan_module_options, self.max_executions, write_pipe,
+                    stop_event, self._raven_dsn)
+            process = WorkerProcess(target=Worker, args=args)
+            process.start()
+            worker_info = WorkerInfo(process, read_pipe, stop_event)
+            self._workers[worker_info.pid] = worker_info
 
     def _process_queue(self):
         while True:
-            try:
-                pid, action, args = self._queue.get_nowait()
-                worker_info = self._workers[pid]
-                worker_info.ping()
-                if action == 'job_started':
-                    scan_id, scan_module_name, time_started, num_tries = args
-                    worker_info.notify_job_started(scan_id, scan_module_name)
-                    self._event_job_started(scan_id, scan_module_name, time_started)
-                elif action == 'job_finished':
-                    self._event_job_finished(
-                        worker_info.scan_id, worker_info.scan_module, time_finished=args[0])
-                    worker_info.notify_job_finished()
-                elif action == 'job_failed':
-                    self._event_job_failed(worker_info.scan_id, worker_info.scan_module)
-                    worker_info.notify_job_failed()
-                elif action == 'log':
-                    log_time, level, message = args
-                    self._event_job_log(worker_info.scan_id, worker_info.scan_module,
-                                        log_time, level, message)
-                elif action == 'add_file':
-                    pass
-                elif action == 'add_debug_file':
-                    pass
-
-            except queue.Empty:
+            pipes = [worker_info.read_pipe for worker_info in self._workers.values()]
+            ready_pipes = wait(pipes, timeout=0.1)
+            if not ready_pipes:
                 break
+            for read_pipe in ready_pipes:
+                self._process_queue_event(read_pipe.recv())
+
+    def _process_queue_event(self, event):
+            pid, action, args = event
+            worker_info = self._workers[pid]
+            worker_info.ping()
+            if action == 'job_started':
+                scan_id, scan_module_name, time_started, num_tries = args
+                worker_info.notify_job_started(scan_id, scan_module_name)
+                self._event_job_started(scan_id, scan_module_name, time_started)
+            elif action == 'job_finished':
+                self._event_job_finished(
+                    worker_info.scan_id, worker_info.scan_module, time_finished=args[0])
+                worker_info.notify_job_finished()
+            elif action == 'job_failed':
+                self._event_job_failed(worker_info.scan_id, worker_info.scan_module)
+                worker_info.notify_job_failed()
+            elif action == 'log':
+                log_time, level, message = args
+                self._event_job_log(worker_info.scan_id, worker_info.scan_module,
+                                    log_time, level, message)
+            elif action == 'add_file':
+                pass
+            elif action == 'add_debug_file':
+                pass
 
     def _event_job_started(self, scan_id, scan_module_name, time_started):
         params = (self.name, time_started, scan_id, scan_module_name)
@@ -219,7 +214,7 @@ class WorkerMaster:
         self._conn.commit()
 
     def _check_hanging(self):
-        for pid, worker_info in self._workers.items():
+        for worker_info in self._workers.values():
             max_execution_time = self.max_execution_times.get(
                 worker_info.scan_module, self.max_execution_time)
             if max_execution_time is None:
@@ -227,30 +222,16 @@ class WorkerMaster:
             if worker_info.get_execution_time() > max_execution_time:
                 worker_info.notify_job_failed()
                 self._event_job_failed(worker_info.scan_id, worker_info.scan_module)
-                try:
-                    os.kill(pid, signal.SIGKILL)
-                except ProcessLookupError:
-                    self._terminated_workers.add(pid)
+                worker_info.process.kill()
+                self._terminated_worker_pids.add(worker_info.pid)
 
     def _remove_workers(self):
-        for pid in self._terminated_workers:
+        for worker_info in self._workers.values():
+            if not worker_info.is_alive():
+                self._terminated_worker_pids.add(worker_info.pid)
+        for pid in self._terminated_worker_pids:
             del self._workers[pid]
-        self._terminated_workers.clear()
-
-    def _handle_signal_child(self, signum, frame):
-        assert signum == signal.SIGCHLD
-        while True:
-            try:
-                pid, status = os.waitpid(-1, os.WNOHANG)
-                if pid not in self._workers:
-                    continue
-                if os.WIFSIGNALED(status) or os.WIFEXITED(status):
-                    # Do not remove it directly from workers because there
-                    # might be events for that worker that still have to be
-                    # processed.
-                    self._terminated_workers.add(pid)
-            except ChildProcessError:
-                return
+        self._terminated_worker_pids.clear()
 
     def _handle_signal_stop(self, signum, frame):
         assert signum in (signal.SIGINT, signal.SIGTERM)
@@ -259,11 +240,11 @@ class WorkerMaster:
 
 class Worker:
     def __init__(self, ppid, db_dsn, scan_module_list, scan_module_options,
-                 max_executions, queue, stop_event, raven_dsn):
+                 max_executions, write_pipe, stop_event, raven_dsn):
         self._pid = os.getpid()
         self._ppid = ppid
         self._max_executions = max_executions
-        self._queue = queue
+        self._write_pipe = write_pipe
         self._stop_event = stop_event
         self._old_sigterm = signal.SIG_DFL
         self._old_sigint = signal.SIG_DFL
@@ -280,7 +261,7 @@ class Worker:
             self._notify_master('job_started', start_info)
             result = Result(job.current_result, NoOpFileHandler())
             logger = logging.Logger(job.scan_module.name)
-            logger.addHandler(WorkerQueueHandler(self._pid, self._queue))
+            logger.addHandler(WorkerWritePipeHandler(self._pid, self._write_pipe))
             logger.addHandler(ScanStreamHandler())
             with tempfile.TemporaryDirectory() as temp_dir:
                 old_cwd = os.getcwd()
@@ -312,4 +293,16 @@ class Worker:
                 break
 
     def _notify_master(self, action, args):
-        self._queue.put((self._pid, action, args))
+        self._write_pipe.send((self._pid, action, args))
+
+
+class WorkerProcess(multiprocessing.Process):
+    def kill(self):
+        if self.exitcode is None:
+            try:
+                os.kill(self.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            except OSError:
+                if self.join(timeout=0.1) is None and self.exitcode is None:
+                    raise
