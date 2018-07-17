@@ -51,7 +51,8 @@ VALUES (%s, %s, %s, %s, %s, %s)
 
 
 class WorkerInfo:
-    def __init__(self, process, read_pipe, stop_event):
+    def __init__(self, worker_id, process, read_pipe, stop_event):
+        self.id = worker_id
         self.process = process
         self.read_pipe = read_pipe
         self.stop_event = stop_event
@@ -109,6 +110,7 @@ class WorkerMaster:
         self.max_execution_time = max_execution_times.get(None)
         self._raven_dsn = raven_dsn
         self._workers = {}
+        self._worker_ids = set(range(num_workers))
         self._terminated_worker_pids = set()
         self._running = False
         self._force_stop = False
@@ -155,6 +157,7 @@ class WorkerMaster:
     def _start_workers(self):
         ppid = os.getpid()
         for i in range(self.num_workers - len(self._workers)):
+            worker_id = self._worker_ids.pop()
             stop_event = multiprocessing.Event()
             read_pipe, write_pipe = multiprocessing.Pipe(duplex=False)
             args = (ppid, self._db_dsn, self.scan_module_list,
@@ -162,7 +165,7 @@ class WorkerMaster:
                     stop_event, self._raven_dsn)
             process = WorkerProcess(target=_spawn_worker, args=args)
             process.start()
-            worker_info = WorkerInfo(process, read_pipe, stop_event)
+            worker_info = WorkerInfo(worker_id, process, read_pipe, stop_event)
             self._workers[worker_info.pid] = worker_info
 
     def _process_queue(self):
@@ -243,6 +246,7 @@ class WorkerMaster:
             if not worker_info.process.is_alive():
                 self._terminated_worker_pids.add(worker_info.pid)
         for pid in self._terminated_worker_pids:
+            self._worker_ids.add(self._workers[pid].id)
             del self._workers[pid]
         self._terminated_worker_pids.clear()
 
