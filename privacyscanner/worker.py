@@ -160,7 +160,7 @@ class WorkerMaster:
             worker_id = self._worker_ids.pop()
             stop_event = multiprocessing.Event()
             read_pipe, write_pipe = multiprocessing.Pipe(duplex=False)
-            args = (ppid, self._db_dsn, self.scan_module_list,
+            args = (worker_id, ppid, self._db_dsn, self.scan_module_list,
                     self.scan_module_options, self.max_executions, write_pipe,
                     stop_event, self._raven_dsn)
             process = WorkerProcess(target=_spawn_worker, args=args)
@@ -268,8 +268,9 @@ def _spawn_worker(*args, **kwargs):
 
 
 class Worker:
-    def __init__(self, ppid, db_dsn, scan_module_list, scan_module_options,
+    def __init__(self, worker_id, ppid, db_dsn, scan_module_list, scan_module_options,
                  max_executions, write_pipe, stop_event, raven_dsn):
+        self._id = worker_id
         self._pid = os.getpid()
         self._ppid = ppid
         self._max_executions = max_executions
@@ -296,7 +297,7 @@ class Worker:
                 old_cwd = os.getcwd()
                 os.chdir(temp_dir)
                 try:
-                    job.scan_module.scan_site(result, logger, job.options)
+                    job.scan_module.scan_site(result, logger, job.options, self._id)
                 except Exception:
                     logger.exception('Scan module `{}` failed.'.format(job.scan_module.name))
                     self._job_queue.report_failure()

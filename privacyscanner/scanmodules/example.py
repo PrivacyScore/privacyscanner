@@ -5,7 +5,7 @@ dependencies = []
 required_keys = ['site_url']
 
 
-def scan_site(result, logger, options):
+def scan_site(result, logger, options, worker_id):
     """Scans a site and adds more information to the result.
 
     The parameter result behaves like a dictionary, you can set keys on it

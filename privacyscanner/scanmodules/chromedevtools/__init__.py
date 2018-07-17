@@ -10,7 +10,7 @@ dependencies = []
 required_keys = ['site_url']
 
 
-def scan_site(result, logger, options):
+def scan_site(result, logger, options, worker_id):
     extractor_classes = [FinalUrlExtractor, GoogleAnalyticsExtractor,
                          CookiesExtractor, RequestsExtractor, TLSDetailsExtractor,
                          CertificateExtractor, ThirdPartyExtractor,
