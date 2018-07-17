@@ -131,11 +131,11 @@ class WorkerMaster:
         for worker_info in self._workers.values():
             worker_info.stop()
         while not self._force_stop and self._workers:
+            workers_str = self._get_running_workers_str()
+            print('{} workers still alive: {}'.format(len(self._workers), workers_str))
             self._check_hanging()
             self._remove_workers()
             time.sleep(0.25)
-            workers_str = self._get_running_workers_str()
-            print('{} workers still alive: {}'.format(len(self._workers), workers_str))
         if self._workers:
             print('Forcefully killing workers ...')
             for worker_info in self._workers.values():
