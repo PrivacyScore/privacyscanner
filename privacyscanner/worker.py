@@ -227,7 +227,7 @@ class WorkerMaster:
 
     def _remove_workers(self):
         for worker_info in self._workers.values():
-            if not worker_info.is_alive():
+            if not worker_info.process.is_alive():
                 self._terminated_worker_pids.add(worker_info.pid)
         for pid in self._terminated_worker_pids:
             del self._workers[pid]
