@@ -122,7 +122,7 @@ class WorkerMaster:
             self._check_hanging()
             self._remove_workers()
             time.sleep(0.25)
-        print('\nGently asking workers to stop ...')
+        print('\nGently asking workers to stop after their current job ...')
         for worker_info in self._workers.values():
             worker_info.stop()
         while not self._force_stop and self._workers:
