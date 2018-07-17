@@ -2,7 +2,6 @@ import logging
 import multiprocessing
 import os
 import signal
-import sys
 import tempfile
 import time
 import socket
@@ -88,6 +87,9 @@ class WorkerInfo:
     def stop(self):
         self.stop_event.set()
 
+    def __str__(self):
+        return '<{}/{} pid={}>'.format(self.scan_id, self.scan_module, self.pid)
+
 
 class WorkerMaster:
     def __init__(self, db_dsn, scan_module_list, scan_module_options=None,
@@ -117,6 +119,7 @@ class WorkerMaster:
         multiprocessing.set_start_method('spawn')
         signal.signal(signal.SIGINT, self._handle_signal_stop)
         signal.signal(signal.SIGTERM, self._handle_signal_stop)
+        signal.signal(signal.SIGUSR1, self._handle_signal_usr1)
         self._running = True
         while self._running:
             self._start_workers()
@@ -131,9 +134,8 @@ class WorkerMaster:
             self._check_hanging()
             self._remove_workers()
             time.sleep(0.25)
-            sys.stdout.buffer.write(b'\033[K')
-            print('{} workers still alive.'.format(len(self._workers)))
-            sys.stdout.buffer.write(b'\033[F')
+            workers_str = self._get_running_workers_str()
+            print('{} workers still alive: {}'.format(len(self._workers), workers_str))
         if self._workers:
             print('Forcefully killing workers ...')
             for worker_info in self._workers.values():
@@ -247,6 +249,13 @@ class WorkerMaster:
     def _handle_signal_stop(self, signum, frame):
         assert signum in (signal.SIGINT, signal.SIGTERM)
         self.stop()
+
+    def _handle_signal_usr1(self, signum, frame):
+        assert signum == signal.SIGUSR1
+        print('Running workers: {}'.format(self._get_running_workers_str()))
+
+    def _get_running_workers_str(self):
+        return ' '.join(str(worker_info) for worker_info in self._workers.values())
 
 
 def _spawn_worker(*args, **kwargs):
