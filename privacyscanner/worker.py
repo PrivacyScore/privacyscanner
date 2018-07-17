@@ -152,19 +152,24 @@ class WorkerMaster:
             args = (ppid, self._db_dsn, self.scan_module_list,
                     self.scan_module_options, self.max_executions, write_pipe,
                     stop_event, self._raven_dsn)
-            process = WorkerProcess(target=Worker, args=args)
+            process = WorkerProcess(target=_spawn_worker, args=args)
             process.start()
             worker_info = WorkerInfo(process, read_pipe, stop_event)
             self._workers[worker_info.pid] = worker_info
 
     def _process_queue(self):
         while True:
-            pipes = [worker_info.read_pipe for worker_info in self._workers.values()]
+            pipes = [worker_info.read_pipe for worker_info in self._workers.values()
+                     if worker_info.process.is_alive()]
             ready_pipes = wait(pipes, timeout=0.1)
             if not ready_pipes:
                 break
             for read_pipe in ready_pipes:
-                self._process_queue_event(read_pipe.recv())
+                try:
+                    event = read_pipe.recv()
+                except EOFError:
+                    continue
+                self._process_queue_event(event)
 
     def _process_queue_event(self, event):
             pid, action, args = event
@@ -236,6 +241,11 @@ class WorkerMaster:
     def _handle_signal_stop(self, signum, frame):
         assert signum in (signal.SIGINT, signal.SIGTERM)
         self.stop()
+
+
+def _spawn_worker(*args, **kwargs):
+    w = Worker(*args, **kwargs)
+    w.run()
 
 
 class Worker:
