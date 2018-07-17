@@ -183,9 +183,9 @@ class ChromeScan:
     def __init__(self, extractor_classes):
         self._extractor_classes = extractor_classes
 
-    def scan(self, result, logger, options):
+    def scan(self, result, logger, options, debugging_port=9222):
         scanner = PageScanner(self._extractor_classes)
-        with ChromeBrowser() as browser:
+        with ChromeBrowser(debugging_port) as browser:
             return scanner.scan(browser, result, logger, options)
 
 

@@ -19,4 +19,5 @@ def scan_site(result, logger, options, worker_id):
                          CookieStatsExtractor, JavaScriptLibsExtractor,
                          ScreenshotExtractor]
     chrome_scan = ChromeScan(extractor_classes)
-    chrome_scan.scan(result, logger, options)
+    debugging_port = options.get('start_port', 9222) + worker_id
+    chrome_scan.scan(result, logger, options, debugging_port)
