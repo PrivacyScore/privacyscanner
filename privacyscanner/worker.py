@@ -158,12 +158,9 @@ class WorkerMaster:
             pid = os.fork()
             if pid == 0:
                 self._clear_signals()
-                raven_client = None
-                if has_raven and self._raven_dsn:
-                    raven_client = raven.Client(self._raven_dsn)
                 worker = Worker(ppid, self._db_dsn, self.scan_module_list,
                                 self.scan_module_options, self.max_executions,
-                                self._queue, stop_event, raven_client)
+                                self._queue, stop_event, self._raven_dsn)
                 worker.run()
                 sys.exit(0)
             else:
@@ -262,15 +259,17 @@ class WorkerMaster:
 
 class Worker:
     def __init__(self, ppid, db_dsn, scan_module_list, scan_module_options,
-                 max_executions, queue, stop_event, raven_client):
+                 max_executions, queue, stop_event, raven_dsn):
         self._pid = os.getpid()
         self._ppid = ppid
         self._max_executions = max_executions
         self._queue = queue
         self._stop_event = stop_event
-        self._raven_client = raven_client
         self._old_sigterm = signal.SIG_DFL
         self._old_sigint = signal.SIG_DFL
+        self._raven_client = None
+        if has_raven and raven_dsn:
+            self._raven_client = raven.Client(raven_dsn)
         self._job_queue = JobQueue(db_dsn, load_modules(scan_module_list),
                                    scan_module_options)
 
