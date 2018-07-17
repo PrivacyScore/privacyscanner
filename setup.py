@@ -11,7 +11,7 @@ setup(
     description='The privacyscanner component scans websites and provides data to PrivacyScore',
     install_requires=['psycopg2-binary', 'toposort', 'dnspython', 'geoip2',
                       'requests', 'adblockparser', 'tldextract', 'pychrome',
-                      'cryptography', 'pillow', 'cffi_re2'],
+                      'cryptography', 'pillow', 'cffi_re2', 'psutil'],
     entry_points="""
     [console_scripts]
     privacyscanner=privacyscanner.scanner:main

@@ -8,6 +8,7 @@ import socket
 from datetime import datetime
 from multiprocessing.connection import wait
 
+import psutil
 import psycopg2
 try:
     import raven
@@ -131,7 +132,7 @@ class WorkerMaster:
         if self._workers:
             print('Forcefully killing workers ...')
             for worker_info in self._workers.values():
-                worker_info.process.kill()
+                kill_everything(worker_info.pid)
         print('All workers stopped. Shutting down ...')
 
     def stop(self):
@@ -227,7 +228,7 @@ class WorkerMaster:
             if worker_info.get_execution_time() > max_execution_time:
                 worker_info.notify_job_failed()
                 self._event_job_failed(worker_info.scan_id, worker_info.scan_module)
-                worker_info.process.kill()
+                kill_everything(worker_info.pid)
                 self._terminated_worker_pids.add(worker_info.pid)
 
     def _remove_workers(self):
@@ -301,6 +302,7 @@ class Worker:
             # Our master asked us to stop. We must obey.
             if self._stop_event.is_set():
                 break
+        kill_everything(self._pid)
 
     def _notify_master(self, action, args):
         self._write_pipe.send((self._pid, action, args))
@@ -313,12 +315,30 @@ class WorkerProcess(multiprocessing.Process):
         os.setpgid(0, 0)
         super().run()
 
-    def kill(self):
-        if self.exitcode is None:
-            try:
-                os.kill(self.pid, signal.SIGKILL)
-            except ProcessLookupError:
-                pass
-            except OSError:
-                if self.join(timeout=0.1) is None and self.exitcode is None:
-                    raise
+
+def kill_everything(pid, timeout=3):
+    # First, we take care of the children.
+    procs = psutil.Process(pid).children()
+    # Suspend first before sending SIGTERM to avoid thundering herd problems
+    for p in procs:
+        p.suspend()
+    # Be nice. Ask them first to terminate, before we kill them.
+    for p in procs:
+        p.terminate()
+    # This delivers the SIGTERM right after resuming, so no chance to
+    # terminate by broken pipes etc. first.
+    for p in procs:
+        p.resume()
+    gone, alive = psutil.wait_procs(procs, timeout=timeout)
+    # They are still alive. Kill'em all. No mercy anymore.
+    if alive:
+        for p in alive:
+            p.kill()
+        psutil.wait_procs(alive, timeout=timeout)
+    # Time for pid to go ...
+    p = psutil.Process(pid)
+    p.terminate()
+    p.wait(timeout)
+    if p.is_running():
+        p.kill()
+        p.wait(timeout)
