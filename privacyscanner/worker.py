@@ -2,6 +2,7 @@ import logging
 import multiprocessing
 import os
 import signal
+import sys
 import tempfile
 import time
 import socket
@@ -129,6 +130,9 @@ class WorkerMaster:
         while not self._force_stop and self._workers:
             self._remove_workers()
             time.sleep(0.25)
+            sys.stdout.buffer.write(b'\033[K')
+            print('{} workers still alive.'.format(len(self._workers)))
+            sys.stdout.buffer.write(b'\033[F')
         if self._workers:
             print('Forcefully killing workers ...')
             for worker_info in self._workers.values():
