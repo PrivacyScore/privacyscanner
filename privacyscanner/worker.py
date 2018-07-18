@@ -312,6 +312,7 @@ class Worker:
                     self._notify_master('job_finished', (datetime.today(), ))
                 finally:
                     os.chdir(old_cwd)
+                    kill_everything(self._pid, only_children=True)
             self._max_executions -= 1
 
             # Stop if our master died.
@@ -335,7 +336,7 @@ class WorkerProcess(multiprocessing.Process):
         super().run()
 
 
-def kill_everything(pid, timeout=3):
+def kill_everything(pid, timeout=3, only_children=False):
     # First, we take care of the children.
     procs = psutil.Process(pid).children()
     # Suspend first before sending SIGTERM to avoid thundering herd problems
@@ -354,10 +355,11 @@ def kill_everything(pid, timeout=3):
         for p in alive:
             p.kill()
         psutil.wait_procs(alive, timeout=timeout)
-    # Time for pid to go ...
-    p = psutil.Process(pid)
-    p.terminate()
-    p.wait(timeout)
-    if p.is_running():
-        p.kill()
+    if not only_children:
+        # Time for pid to go ...
+        p = psutil.Process(pid)
+        p.terminate()
         p.wait(timeout)
+        if p.is_running():
+            p.kill()
+            p.wait(timeout)
