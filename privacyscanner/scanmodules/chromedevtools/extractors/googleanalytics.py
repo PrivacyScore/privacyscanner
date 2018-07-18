@@ -58,7 +58,6 @@ class GoogleAnalyticsExtractor(Extractor):
             info = json.loads(self.page.tab.Runtime.evaluate(expression=TRACKER_JS)['result']['value'])
             ga.update(info)
         except KeyError:
-            raise
             pass
         num_requests_aip = 0
         num_requests_no_aip = 0
