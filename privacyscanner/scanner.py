@@ -147,7 +147,7 @@ def scan_site(args):
             os.chdir(temp_dir)
             logger.info('Starting {}'.format(mod.name))
             try:
-                mod.scan_site(result, logger, options)
+                mod.scan_site(result, logger, options, worker_id=0)
             except Exception:
                 logger.exception('Scan module `{}` failed.'.format(mod.name))
                 sys.exit(1)
