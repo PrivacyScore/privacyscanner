@@ -306,7 +306,7 @@ class Worker:
                         self._raven_client.captureException(tags={
                             'scan_id': job.scan_id,
                             'scan_module_name': job.scan_module.name
-                        }, extra=result.get_results())
+                        }, extra={'result': result.get_results()})
                 else:
                     self._job_queue.report_result(result.get_updates())
                     self._notify_master('job_finished', (datetime.today(), ))
