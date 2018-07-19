@@ -14,7 +14,7 @@ CREATE UNIQUE INDEX base_author_uniq ON base_author(lower(name), lower(email));
 
 CREATE TABLE sites_site (
     id character varying(40) NOT NULL PRIMARY KEY,
-    url character varying(200) NOT NULL,
+    url text NOT NULL,
     is_private boolean NOT NULL,
     latest_scan_id integer,
     date_created timestamp with time zone NOT NULL,
