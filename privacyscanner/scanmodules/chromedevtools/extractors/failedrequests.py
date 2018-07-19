@@ -34,7 +34,18 @@ class FailedRequestsExtractor(Extractor):
                 try:
                     dns.resolver.query(domain, 'SOA')
                     domain_registered = True
-                except dns.resolver.NXDOMAIN:
+                # If we have a timeout, we better don't say anything about
+                # this domain rather than giving a wrong impressing wether
+                # the domain is registered or net
+                except dns.resolver.Timeout:
+                    domain_registered = None
+                # Nameservers behave weird, if the domain is not registered.
+                # Some send NXDOMAIN as expected, others prefer to give an
+                # answer but do not include a SOA entry in the response.
+                # Sometimes all nameservers do not like to answer if the
+                # domain is not registered. It is a real mess.
+                except (dns.resolver.NXDOMAIN, dns.resolver.NoNameservers,
+                        dns.resolver.NoAnswer):
                     domain_registered = False
                 extra = {'domain_registered': domain_registered}
             elif 'net::ERR_UNKNOWN_URL_SCHEME' in error_text:
