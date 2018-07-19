@@ -2,10 +2,10 @@ import json
 from urllib.parse import parse_qs
 
 from .base import Extractor
-from ..utils import javascript_stringify
+from ..utils import JavaScriptError, javascript_evaluate
 
 
-TRACKER_JS = javascript_stringify("""
+TRACKER_JS = """
 (function() {
     let info = {
         'has_ga_object': false,
@@ -44,7 +44,7 @@ TRACKER_JS = javascript_stringify("""
     
     return info;
 })()
-""").lstrip()
+""".lstrip()
 
 
 class GoogleAnalyticsExtractor(Extractor):
@@ -55,9 +55,9 @@ class GoogleAnalyticsExtractor(Extractor):
             'trackers': []
         }
         try:
-            info = json.loads(self.page.tab.Runtime.evaluate(expression=TRACKER_JS)['result']['value'])
+            info = javascript_evaluate(self.page.tab, TRACKER_JS)
             ga.update(info)
-        except KeyError:
+        except JavaScriptError:
             pass
         num_requests_aip = 0
         num_requests_no_aip = 0
