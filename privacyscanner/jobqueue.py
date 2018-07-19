@@ -63,13 +63,6 @@ class JobQueue:
         self._conn = None
         self._connect()
 
-    def get_job(self):
-        while True:
-            job = self._get_job_nowait()
-            if job:
-                return job
-            time.sleep(1)
-
     def report_result(self, updates):
         assert self._scan_id is not None
         with self._conn.cursor() as c:
@@ -85,7 +78,7 @@ class JobQueue:
     def _connect(self):
         self._conn = psycopg2.connect(self._dsn)
 
-    def _get_job_nowait(self):
+    def get_job_nowait(self):
         assert self._scan_id is None
         if self._conn.closed:
             self._connect()

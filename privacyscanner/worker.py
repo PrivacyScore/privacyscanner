@@ -286,7 +286,17 @@ class Worker:
 
     def run(self):
         while self._max_executions > 0:
-            job = self._job_queue.get_job()
+            # Stop if our master died.
+            if self._ppid != os.getppid():
+                break
+
+            # Our master asked us to stop. We must obey.
+            if self._stop_event.is_set():
+                break
+            job = self._job_queue.get_job_nowait()
+            if job is None:
+                time.sleep(1)
+                continue
             start_info = (job.scan_id, job.scan_module.name, datetime.today(), job.num_tries)
             self._notify_master('job_started', start_info)
             result = Result(job.current_result, NoOpFileHandler())
@@ -314,14 +324,6 @@ class Worker:
                     os.chdir(old_cwd)
                     kill_everything(self._pid, only_children=True)
             self._max_executions -= 1
-
-            # Stop if our master died.
-            if self._ppid != os.getppid():
-                break
-
-            # Our master asked us to stop. We must obey.
-            if self._stop_event.is_set():
-                break
         kill_everything(self._pid)
 
     def _notify_master(self, action, args):
