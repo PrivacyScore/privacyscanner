@@ -38,6 +38,8 @@ class SecurityHeadersExtractor(Extractor):
         csp = {}
         parts = [part.strip() for part in header_value.split(';')]
         for part in parts:
+            if not part:
+                continue
             values = part.split()
             key = values[0]
             values = values[1:]
