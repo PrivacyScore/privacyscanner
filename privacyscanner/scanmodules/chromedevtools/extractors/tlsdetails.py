@@ -4,15 +4,15 @@ from .base import Extractor
 
 class TLSDetailsExtractor(Extractor):
     def extract_information(self):
+        self.result['tls'] = {'has_tls': None}
+
         response = self.page.get_response_by_url(self.result['final_url'])
         if response is None:
             self.logger.error('Could not get response for final_url')
             return
 
         if 'securityDetails' not in response:
-            self.result['tls'] = {
-                'has_tls': False,
-            }
+            self.result['tls']['has_tls'] = False
             return
 
         details = {}
@@ -39,7 +39,5 @@ class TLSDetailsExtractor(Extractor):
                 continue
             details[camelcase_to_underscore(key)] = value
 
-        self.result['tls'] = {
-            'has_tls': True,
-        }
+        self.result['tls']['has_tls'] = True
         self.result['tls'].update(details)

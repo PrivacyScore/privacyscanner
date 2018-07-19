@@ -21,6 +21,8 @@ class CertificateExtractor(Extractor):
                 cert_chain = explanation['certificate']
                 break
         if cert_chain:
+            if self.result['tls']['has_tls'] is None:
+                self.result['tls']['has_tls'] = True
             self.result['tls']['certificate'] = self._get_certificate_info(cert_chain)
 
     def _get_certificate_info(self, cert_chain):
