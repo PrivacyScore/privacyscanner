@@ -2,7 +2,7 @@ from .extractors import FinalUrlExtractor, GoogleAnalyticsExtractor, \
     CookiesExtractor, RequestsExtractor, TLSDetailsExtractor, CertificateExtractor, \
     ThirdPartyExtractor, InsecureContentExtractor, FailedRequestsExtractor, \
     SecurityHeadersExtractor, TrackerDetectExtractor, CookieStatsExtractor, \
-    JavaScriptLibsExtractor, ScreenshotExtractor
+    JavaScriptLibsExtractor, ScreenshotExtractor, ImprintExtractor
 from .chromescan import ChromeScan
 
 name = 'chromedevtools'
@@ -17,7 +17,7 @@ def scan_site(result, logger, options, worker_id):
                          InsecureContentExtractor, FailedRequestsExtractor,
                          SecurityHeadersExtractor, TrackerDetectExtractor,
                          CookieStatsExtractor, JavaScriptLibsExtractor,
-                         ScreenshotExtractor]
+                         ScreenshotExtractor, ImprintExtractor]
     chrome_scan = ChromeScan(extractor_classes)
     debugging_port = options.get('start_port', 9222) + worker_id
     chrome_scan.scan(result, logger, options, debugging_port)

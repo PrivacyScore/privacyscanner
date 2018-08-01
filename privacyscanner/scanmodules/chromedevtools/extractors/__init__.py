@@ -12,3 +12,4 @@ from .thirdparties import ThirdPartyExtractor
 from .tlsdetails import TLSDetailsExtractor
 from .trackerdetect import TrackerDetectExtractor
 from .screenshot import ScreenshotExtractor
+from .imprint import ImprintExtractor
