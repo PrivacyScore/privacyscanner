@@ -1,9 +1,6 @@
 """
 Test for common server leaks.
 """
-import json
-import re
-from typing import Dict, Union
 from urllib.parse import urlparse
 from tldextract import extract
 import requests
@@ -144,7 +141,7 @@ def _get(url, timeout):
         return None
 
 
-def _response_to_json(resp: Response) -> bytes:
+def _response_to_json(resp: Response):
     """Generate a json byte string from a response
     received through requests."""
     # we store only the top of the file
@@ -214,10 +211,6 @@ def _check_leaks(url, max_workers):
             #   we only check if it is contained in the response
             if isinstance(pattern, str):
                 if pattern in response['text']:
-                    leaks.append(trial)
-            # - If it is a RegEx object, we perform a pattern match
-            elif isinstance(pattern, re._pattern_type):
-                if re.match(response['text']):
                     leaks.append(trial)
             # - If it is callable,
             #   we call it with the response text and check the return value
