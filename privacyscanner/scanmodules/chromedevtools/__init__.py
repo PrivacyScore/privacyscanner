@@ -10,7 +10,7 @@ dependencies = []
 required_keys = ['site_url']
 
 
-def scan_site(result, logger, options, worker_id):
+def scan_site(result, logger, options, meta):
     extractor_classes = [FinalUrlExtractor, GoogleAnalyticsExtractor,
                          CookiesExtractor, RequestsExtractor, TLSDetailsExtractor,
                          CertificateExtractor, ThirdPartyExtractor,
@@ -19,5 +19,5 @@ def scan_site(result, logger, options, worker_id):
                          CookieStatsExtractor, JavaScriptLibsExtractor,
                          ScreenshotExtractor, ImprintExtractor]
     chrome_scan = ChromeScan(extractor_classes)
-    debugging_port = options.get('start_port', 9222) + worker_id
+    debugging_port = options.get('start_port', 9222) + meta.worker_id
     chrome_scan.scan(result, logger, options, debugging_port)

@@ -10,6 +10,7 @@ from multiprocessing.connection import wait
 
 import psutil
 import psycopg2
+
 try:
     import raven
     has_raven = True
@@ -19,6 +20,7 @@ except ModuleNotFoundError:
 from privacyscanner.filehandlers import NoOpFileHandler
 from privacyscanner.jobqueue import JobQueue
 from privacyscanner.result import Result
+from privacyscanner.scanmeta import ScanMeta
 from privacyscanner.scanmodules import load_modules
 from privacyscanner.loghandlers import WorkerWritePipeHandler, ScanStreamHandler
 
@@ -303,11 +305,12 @@ class Worker:
             logger = logging.Logger(job.scan_module.name)
             logger.addHandler(WorkerWritePipeHandler(self._pid, self._write_pipe))
             logger.addHandler(ScanStreamHandler())
+            scan_meta = ScanMeta(worker_id=self._id, num_try=job.num_tries)
             with tempfile.TemporaryDirectory() as temp_dir:
                 old_cwd = os.getcwd()
                 os.chdir(temp_dir)
                 try:
-                    job.scan_module.scan_site(result, logger, job.options, self._id)
+                    job.scan_module.scan_site(result, logger, job.options, scan_meta)
                 except Exception:
                     logger.exception('Scan module `{}` failed.'.format(job.scan_module.name))
                     self._job_queue.report_failure()

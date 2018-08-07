@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 from pathlib import Path
 
 from toposort import toposort, toposort_flatten
+
 try:
     import raven
     has_raven = True
@@ -20,6 +21,7 @@ except ModuleNotFoundError:
 
 from privacyscanner.filehandlers import DirectoryFileHandler
 from privacyscanner.result import Result
+from privacyscanner.scanmeta import ScanMeta
 from privacyscanner.scanmodules import load_modules
 from privacyscanner import defaultconfig
 from privacyscanner.loghandlers import ScanFileHandler, ScanStreamHandler
@@ -142,12 +144,13 @@ def scan_site(args):
         logger.addHandler(stream_handler)
         logger.addHandler(file_handler)
         options = config['SCAN_MODULE_OPTIONS'].get(mod.name, {})
+        scan_meta = ScanMeta(worker_id=0, num_try=1)
         with tempfile.TemporaryDirectory() as temp_dir:
             old_cwd = os.getcwd()
             os.chdir(temp_dir)
             logger.info('Starting {}'.format(mod.name))
             try:
-                mod.scan_site(result, logger, options, worker_id=0)
+                mod.scan_site(result, logger, options, scan_meta)
             except Exception:
                 logger.exception('Scan module `{}` failed.'.format(mod.name))
                 sys.exit(1)

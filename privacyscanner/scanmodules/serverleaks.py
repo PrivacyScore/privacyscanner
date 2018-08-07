@@ -220,7 +220,7 @@ def _check_leaks(url, max_workers):
 
     return leaks
 
-def scan_site(result, logger, options, worker_id):
+def scan_site(result, logger, options, meta):
     max_workers = options.get('max_workers', 8)
 
     # Note: This does not scan the original site_url before redirection.

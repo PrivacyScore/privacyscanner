@@ -28,7 +28,7 @@ required_keys = ['site_url']
 MINIMUM_SIMILARITY = 0.90
 
 
-def scan_site(result, logger, options, worker_id):
+def scan_site(result, logger, options, meta):
     # determine hostname
     hostname = urlparse(result['site_url']).hostname
 
