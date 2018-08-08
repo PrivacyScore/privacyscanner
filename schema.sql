@@ -65,7 +65,8 @@ CREATE TABLE scanner_scanjob (
     scan_module character varying(80) NOT NULL,
     priority integer NOT NULL,
     dependency_order integer NOT NULL,
-    scan_id integer NOT NULL REFERENCES scanner_scan(id)
+    scan_id integer NOT NULL REFERENCES scanner_scan(id),
+    not_before timestamp with time zone
 );
 
 CREATE INDEX scanner_scanjob_scan ON scanner_scanjob(scan_id);

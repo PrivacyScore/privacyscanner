@@ -11,6 +11,8 @@ from multiprocessing.connection import wait
 import psutil
 import psycopg2
 
+from privacyscanner.exceptions import RetryScan, RescheduleLater
+
 try:
     import raven
     has_raven = True
@@ -53,11 +55,12 @@ VALUES (%s, %s, %s, %s, %s, %s)
 
 
 class WorkerInfo:
-    def __init__(self, worker_id, process, read_pipe, stop_event):
+    def __init__(self, worker_id, process, read_pipe, stop_event, ack_event):
         self.id = worker_id
         self.process = process
         self.read_pipe = read_pipe
         self.stop_event = stop_event
+        self.ack_event = ack_event
         self.scan_id = None
         self.scan_module = None
         self._heartbeat = None
@@ -70,6 +73,9 @@ class WorkerInfo:
 
     def ping(self):
         self._heartbeat = time.time()
+
+    def ack(self):
+        self.ack_event.set()
 
     def notify_job_started(self, scan_id, scan_module):
         self.scan_id = scan_id
@@ -96,14 +102,15 @@ class WorkerInfo:
 
 class WorkerMaster:
     def __init__(self, db_dsn, scan_module_list, scan_module_options=None,
-                 num_workers=2, max_executions=100, max_execution_times=None,
-                 raven_dsn=None):
+                 max_tries=3, num_workers=2, max_executions=100,
+                 max_execution_times=None, raven_dsn=None):
         self.name = socket.gethostname()
         self._db_dsn = db_dsn
         self.scan_module_list = scan_module_list
         if scan_module_options is None:
             scan_module_options = {}
         self.scan_module_options = scan_module_options
+        self.max_tries = max_tries
         self.num_workers = num_workers
         self.max_executions = max_executions
         if max_execution_times is None:
@@ -161,13 +168,14 @@ class WorkerMaster:
         for i in range(self.num_workers - len(self._workers)):
             worker_id = self._worker_ids.pop()
             stop_event = multiprocessing.Event()
+            ack_event = multiprocessing.Event()
             read_pipe, write_pipe = multiprocessing.Pipe(duplex=False)
             args = (worker_id, ppid, self._db_dsn, self.scan_module_list,
-                    self.scan_module_options, self.max_executions, write_pipe,
-                    stop_event, self._raven_dsn)
+                    self.scan_module_options, self.max_tries, self.max_executions,
+                    write_pipe, stop_event, ack_event, self._raven_dsn)
             process = WorkerProcess(target=_spawn_worker, args=args)
             process.start()
-            worker_info = WorkerInfo(worker_id, process, read_pipe, stop_event)
+            worker_info = WorkerInfo(worker_id, process, read_pipe, stop_event, ack_event)
             self._workers[worker_info.pid] = worker_info
 
     def _process_queue(self):
@@ -190,8 +198,8 @@ class WorkerMaster:
             worker_info.ping()
             if action == 'job_started':
                 scan_id, scan_module_name, time_started, num_tries = args
-                worker_info.notify_job_started(scan_id, scan_module_name)
                 self._event_job_started(scan_id, scan_module_name, time_started)
+                worker_info.notify_job_started(scan_id, scan_module_name)
             elif action == 'job_finished':
                 self._event_job_finished(
                     worker_info.scan_id, worker_info.scan_module, time_finished=args[0])
@@ -207,6 +215,7 @@ class WorkerMaster:
                 pass
             elif action == 'add_debug_file':
                 pass
+            worker_info.ack()
 
     def _event_job_started(self, scan_id, scan_module_name, time_started):
         params = (self.name, time_started, scan_id, scan_module_name)
@@ -271,20 +280,22 @@ def _spawn_worker(*args, **kwargs):
 
 class Worker:
     def __init__(self, worker_id, ppid, db_dsn, scan_module_list, scan_module_options,
-                 max_executions, write_pipe, stop_event, raven_dsn):
+                 max_tries, max_executions, write_pipe, stop_event, ack_event,
+                 raven_dsn):
         self._id = worker_id
         self._pid = os.getpid()
         self._ppid = ppid
         self._max_executions = max_executions
         self._write_pipe = write_pipe
         self._stop_event = stop_event
+        self._ack_event = ack_event
         self._old_sigterm = signal.SIG_DFL
         self._old_sigint = signal.SIG_DFL
         self._raven_client = None
         if has_raven and raven_dsn:
             self._raven_client = raven.Client(raven_dsn)
         self._job_queue = JobQueue(db_dsn, load_modules(scan_module_list),
-                                   scan_module_options)
+                                   scan_module_options, max_tries)
 
     def run(self):
         while self._max_executions > 0:
@@ -305,12 +316,19 @@ class Worker:
             logger = logging.Logger(job.scan_module.name)
             logger.addHandler(WorkerWritePipeHandler(self._pid, self._write_pipe))
             logger.addHandler(ScanStreamHandler())
-            scan_meta = ScanMeta(worker_id=self._id, num_try=job.num_tries)
+            scan_meta = ScanMeta(worker_id=self._id, num_tries=job.num_tries)
             with tempfile.TemporaryDirectory() as temp_dir:
                 old_cwd = os.getcwd()
                 os.chdir(temp_dir)
                 try:
                     job.scan_module.scan_site(result, logger, job.options, scan_meta)
+                except RetryScan:
+                    self._job_queue.report_failure()
+                    self._notify_master('job_failed', (datetime.today(), ))
+                except RescheduleLater as e:
+                    self._job_queue.reschedule(e.not_before)
+                    self._job_queue.report_result(result.get_updates())
+                    self._notify_master('job_finished', (datetime.today(), ))
                 except Exception:
                     logger.exception('Scan module `{}` failed.'.format(job.scan_module.name))
                     self._job_queue.report_failure()
@@ -331,6 +349,8 @@ class Worker:
 
     def _notify_master(self, action, args):
         self._write_pipe.send((self._pid, action, args))
+        self._ack_event.wait()
+        self._ack_event.clear()
 
 
 class WorkerProcess(multiprocessing.Process):

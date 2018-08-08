@@ -7,7 +7,10 @@ import pprint
 import string
 import sys
 import tempfile
+import time
+from collections import namedtuple
 from copy import deepcopy
+from datetime import datetime
 from urllib.parse import urlparse
 from pathlib import Path
 
@@ -25,6 +28,8 @@ from privacyscanner.scanmeta import ScanMeta
 from privacyscanner.scanmodules import load_modules
 from privacyscanner import defaultconfig
 from privacyscanner.loghandlers import ScanFileHandler, ScanStreamHandler
+from privacyscanner.exceptions import RescheduleLater, RetryScan
+
 
 CONFIG_LOCATIONS = [
     Path('~/.config/privacyscanner/config.py').expanduser(),
@@ -34,6 +39,9 @@ CONFIG_LOCATIONS = [
 
 class CommandError(Exception):
     pass
+
+
+QueueEntry = namedtuple('QueueEntry', ['scan_module_name', 'num_try', 'not_before'])
 
 
 def load_config(config_file):
@@ -69,9 +77,9 @@ def run_workers(args):
     if has_raven and config['RAVEN_DSN']:
         raven_client = raven.Client(config['RAVEN_DSN'])
     master = WorkerMaster(config['QUEUE_DB_DSN'], config['SCAN_MODULES'],
-                          config['SCAN_MODULE_OPTIONS'], config['NUM_WORKERS'],
-                          config['MAX_EXECUTIONS'], config['MAX_EXECUTION_TIMES'],
-                          config['RAVEN_DSN'])
+                          config['SCAN_MODULE_OPTIONS'], config['MAX_TRIES'],
+                          config['NUM_WORKERS'], config['MAX_EXECUTIONS'],
+                          config['MAX_EXECUTION_TIMES'], config['RAVEN_DSN'])
     try:
         master.start()
     except Exception:
@@ -134,9 +142,18 @@ def scan_site(args):
             if scan_module_name in args.scan_modules
         ]
 
+    has_error = False
     result = Result(result_json, DirectoryFileHandler(results_dir))
     stream_handler = ScanStreamHandler()
-    for scan_module_name in scan_module_names:
+    scan_queue = [QueueEntry(mod_name, 0, None) for mod_name in scan_module_names]
+    scan_queue.reverse()
+    while scan_queue:
+        scan_module_name, num_try, not_before = scan_queue.pop()
+        if not_before is not None:
+            # noinspection PyTypeChecker
+            while datetime.utcnow() < not_before:
+                time.sleep(0.5)
+        num_try += 1
         mod = scan_modules[scan_module_name]
         log_filename = (results_dir / (mod.name + '.log')).name
         file_handler = ScanFileHandler(log_filename)
@@ -144,16 +161,26 @@ def scan_site(args):
         logger.addHandler(stream_handler)
         logger.addHandler(file_handler)
         options = config['SCAN_MODULE_OPTIONS'].get(mod.name, {})
-        scan_meta = ScanMeta(worker_id=0, num_try=1)
+        scan_meta = ScanMeta(worker_id=0, num_tries=num_try)
         with tempfile.TemporaryDirectory() as temp_dir:
             old_cwd = os.getcwd()
             os.chdir(temp_dir)
             logger.info('Starting {}'.format(mod.name))
             try:
                 mod.scan_site(result, logger, options, scan_meta)
+            except RetryScan:
+                if num_try <= config['MAX_TRIES']:
+                    scan_queue.append(QueueEntry(scan_module_name, num_try, not_before))
+                    logger.info('Scan module `{}` will be retried'.format(mod.name))
+                else:
+                    has_error = True
+            except RescheduleLater as e:
+                scan_queue.append(QueueEntry(scan_module_name, num_try, e.not_before))
             except Exception:
+                if num_try <= config.MAX_RETRIES:
+                    scan_queue.append(QueueEntry(scan_module_name, num_try, not_before))
+                has_error = True
                 logger.exception('Scan module `{}` failed.'.format(mod.name))
-                sys.exit(1)
             finally:
                 os.chdir(old_cwd)
                 with result_file.open('w') as f:
@@ -161,6 +188,8 @@ def scan_site(args):
                     f.write('\n')
             logger.info('Finished {}'.format(mod.name))
     pprint.pprint(result.get_results())
+    if has_error:
+        sys.exit(1)
 
 
 def print_master_config(args):
