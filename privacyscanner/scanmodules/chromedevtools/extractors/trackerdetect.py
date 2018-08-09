@@ -7,6 +7,7 @@ import sys
 # adblockparser checks whether he can import re2 and not whether it can
 # import cffi_re2. Therefore we put cffi_re2 into sys.modules as re2
 # so adblockparser will import cffi_re2 when importing re2.
+
 try:
     import cffi_re2
     sys.modules['re2'] = cffi_re2
@@ -16,7 +17,12 @@ import tldextract
 from adblockparser import AdblockRules
 
 from .base import Extractor
+from privacyscanner.utils import download_file
 
+
+EASYLIST_DOWNLOAD_PREFIX = 'https://easylist.to/easylist/'
+EASYLIST_FILES = ['easylist.txt', 'easyprivacy.txt', 'fanboy-annoyance.txt']
+EASYLIST_PATH = Path('~/.local/share/privacyscanner/easylist').expanduser()
 
 _adblock_rules_cache = None
 
@@ -71,8 +77,7 @@ class TrackerDetectExtractor(Extractor):
         global _adblock_rules_cache
 
         easylist_path = Path(self.options['easylist_path'])
-        easylist_files = ['easylist.txt', 'easyprivacy.txt', 'fanboy-annoyance.txt']
-        easylist_files = [easylist_path / filename for filename in easylist_files]
+        easylist_files = [easylist_path / filename for filename in EASYLIST_FILES]
 
         mtime = max(filename.stat().st_mtime for filename in easylist_files)
         if _adblock_rules_cache is not None and _adblock_rules_cache['mtime'] >= mtime:
@@ -105,3 +110,11 @@ class TrackerDetectExtractor(Extractor):
             'rules': rules
         }
         self.rules = rules
+
+    @staticmethod
+    def update_dependencies(options):
+        EASYLIST_PATH.mkdir(parents=True, exist_ok=True)
+        for filename in EASYLIST_FILES:
+            download_url = EASYLIST_DOWNLOAD_PREFIX + filename
+            target_file = (EASYLIST_PATH / filename).open('wb')
+            download_file(download_url, target_file)
