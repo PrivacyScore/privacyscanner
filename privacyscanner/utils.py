@@ -1,3 +1,4 @@
+import time
 from urllib.request import Request, urlopen
 
 
@@ -17,3 +18,10 @@ def copy_to(src, dest):
         if not data:
             break
         dest.write(data)
+
+
+def file_is_outdated(path, max_age):
+    try:
+        return path.stat().st_mtime + max_age < time.time()
+    except FileNotFoundError:
+        return True
