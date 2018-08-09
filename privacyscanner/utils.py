@@ -10,6 +10,7 @@ def download_file(url, fileobj):
     request.add_header('User-Agent', FAKE_UA)
     response = urlopen(request)
     copy_to(response, fileobj)
+    fileobj.flush()
 
 
 def copy_to(src, dest):
