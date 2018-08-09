@@ -7,9 +7,9 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric.dsa import DSAPublicKey
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
-from cryptography.x509 import load_der_x509_certificate, NameOID
+from cryptography.x509 import load_der_x509_certificate
 
-from .base import Extractor
+from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
 
 
 class CertificateExtractor(Extractor):

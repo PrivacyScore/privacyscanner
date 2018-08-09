@@ -1,5 +1,6 @@
 from urllib.parse import urlparse
 
+
 name = 'example'
 dependencies = []
 required_keys = ['site_url']

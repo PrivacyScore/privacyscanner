@@ -1,8 +1,7 @@
-import json
 from urllib.parse import parse_qs
 
-from .base import Extractor
-from ..utils import JavaScriptError, javascript_evaluate
+from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
+from privacyscanner.scanmodules.chromedevtools.utils import JavaScriptError, javascript_evaluate
 
 
 TRACKER_JS = """

@@ -1,6 +1,5 @@
-import tldextract
-
-from .base import Extractor
+from privacyscanner.scanmodules.chromedevtools.utils import tldextract
+from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
 
 
 class ThirdPartyExtractor(Extractor):

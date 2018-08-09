@@ -1,6 +1,6 @@
-from pathlib import Path
 import pickle
 import sys
+from pathlib import Path
 
 # This is a somewhat ugly hack. There are several implementations or re2
 # but none of them except cffi_re2 can be installed without pain. However,
@@ -13,10 +13,10 @@ try:
     sys.modules['re2'] = cffi_re2
 except ModuleNotFoundError:
     pass
-import tldextract
 from adblockparser import AdblockRules
 
-from .base import Extractor
+from privacyscanner.scanmodules.chromedevtools.utils import tldextract
+from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
 from privacyscanner.utils import download_file
 
 

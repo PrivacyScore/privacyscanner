@@ -2,7 +2,6 @@ from typing import NamedTuple
 
 import psycopg2
 from psycopg2.extras import Json
-import time
 
 
 _FETCH_JOB_QUERY = """

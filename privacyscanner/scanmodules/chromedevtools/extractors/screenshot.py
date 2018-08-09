@@ -3,7 +3,7 @@ from io import BytesIO
 
 from PIL import Image
 
-from .base import Extractor
+from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
 
 
 class ScreenshotExtractor(Extractor):

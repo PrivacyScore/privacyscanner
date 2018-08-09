@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 
 import pychrome
 
-from .base import Extractor
+from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
 
 
 ELEMENT_NODE = 1

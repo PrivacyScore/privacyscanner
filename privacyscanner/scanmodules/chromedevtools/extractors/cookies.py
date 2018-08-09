@@ -1,4 +1,5 @@
-from .base import Extractor
+from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
+
 
 class CookiesExtractor(Extractor):
     def extract_information(self):

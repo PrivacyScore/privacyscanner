@@ -1,5 +1,5 @@
-from ..utils import JavaScriptError, javascript_evaluate
-from .base import Extractor
+from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
+from privacyscanner.scanmodules.chromedevtools.utils import javascript_evaluate, JavaScriptError
 
 
 LIBRARY_JS = """

@@ -1,5 +1,5 @@
-from ..utils import camelcase_to_underscore
-from .base import Extractor
+from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
+from privacyscanner.scanmodules.chromedevtools.utils import camelcase_to_underscore
 
 
 class TLSDetailsExtractor(Extractor):

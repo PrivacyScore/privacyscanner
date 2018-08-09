@@ -1,11 +1,12 @@
-from ...utils import file_is_outdated
-from .extractors import FinalUrlExtractor, GoogleAnalyticsExtractor, \
-    CookiesExtractor, RequestsExtractor, TLSDetailsExtractor, CertificateExtractor, \
-    ThirdPartyExtractor, InsecureContentExtractor, FailedRequestsExtractor, \
-    SecurityHeadersExtractor, TrackerDetectExtractor, CookieStatsExtractor, \
-    JavaScriptLibsExtractor, ScreenshotExtractor, ImprintExtractor
-from .chromescan import ChromeScan
-from .utils import TLDEXTRACT_CACHE_FILE, tldextract
+from privacyscanner.scanmodules.chromedevtools.chromescan import ChromeScan
+from privacyscanner.scanmodules.chromedevtools.extractors import FinalUrlExtractor, \
+    GoogleAnalyticsExtractor, CookiesExtractor, RequestsExtractor, TLSDetailsExtractor, \
+    CertificateExtractor, ThirdPartyExtractor, InsecureContentExtractor, \
+    FailedRequestsExtractor, SecurityHeadersExtractor, TrackerDetectExtractor, \
+    CookieStatsExtractor, JavaScriptLibsExtractor, ScreenshotExtractor, ImprintExtractor
+from privacyscanner.scanmodules.chromedevtools.utils import TLDEXTRACT_CACHE_FILE, tldextract
+from privacyscanner.utils import file_is_outdated
+
 
 name = 'chromedevtools'
 dependencies = []

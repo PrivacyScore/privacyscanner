@@ -1,6 +1,6 @@
 import argparse
-import json
 import hashlib
+import json
 import logging
 import os
 import pprint
@@ -11,8 +11,8 @@ import time
 from collections import namedtuple
 from copy import deepcopy
 from datetime import datetime
-from urllib.parse import urlparse
 from pathlib import Path
+from urllib.parse import urlparse
 
 from toposort import toposort, toposort_flatten
 

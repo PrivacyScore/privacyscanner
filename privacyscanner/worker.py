@@ -2,16 +2,14 @@ import logging
 import multiprocessing
 import os
 import signal
+import socket
 import tempfile
 import time
-import socket
 from datetime import datetime
 from multiprocessing.connection import wait
 
 import psutil
 import psycopg2
-
-from privacyscanner.exceptions import RetryScan, RescheduleLater
 
 try:
     import raven
@@ -19,6 +17,7 @@ try:
 except ModuleNotFoundError:
     has_raven = False
 
+from privacyscanner.exceptions import RetryScan, RescheduleLater
 from privacyscanner.filehandlers import NoOpFileHandler
 from privacyscanner.jobqueue import JobQueue
 from privacyscanner.result import Result

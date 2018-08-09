@@ -20,6 +20,7 @@ from geoip2.errors import AddressNotFoundError
 
 from privacyscanner.utils import download_file, copy_to, file_is_outdated
 
+
 name = 'network'
 dependencies = []
 required_keys = ['site_url']

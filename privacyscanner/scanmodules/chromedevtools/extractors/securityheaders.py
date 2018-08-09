@@ -1,4 +1,4 @@
-from .base import Extractor
+from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
 
 
 class SecurityHeadersExtractor(Extractor):

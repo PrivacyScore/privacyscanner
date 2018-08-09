@@ -1,12 +1,13 @@
 """
 Test for common server leaks.
 """
+from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urlparse
-from tldextract import extract
+
 import requests
 from requests.exceptions import ConnectionError
 from requests.models import Response
-from concurrent.futures import ThreadPoolExecutor
+from tldextract import extract
 
 
 name = 'serverleak'

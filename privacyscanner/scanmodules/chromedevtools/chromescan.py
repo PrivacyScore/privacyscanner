@@ -11,7 +11,6 @@ from urllib.parse import urlparse
 import pychrome
 from requests.exceptions import ConnectionError
 
-
 # See https://github.com/GoogleChrome/chrome-launcher/blob/master/docs/chrome-flags-for-tools.md
 # See also https://peter.sh/experiments/chromium-command-line-switches/
 CHROME_OPTIONS = [
