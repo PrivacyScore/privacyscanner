@@ -18,7 +18,7 @@ from dns.exception import DNSException
 from geoip2.database import Reader
 from geoip2.errors import AddressNotFoundError
 
-from privacyscanner.utils import download_file, copy_to
+from privacyscanner.utils import download_file, copy_to, file_is_outdated
 
 name = 'network'
 dependencies = []
@@ -35,6 +35,7 @@ MINIMUM_SIMILARITY = 0.90
 # which takes precedence over copies in other locations
 GEOIP_DATABASE_PATH = Path('~/.local/share/privacyscanner/GeoIP/GeoLite2-Country.mmdb').expanduser()
 GEOIP_DOWNLOAD_URL = 'https://geolite.maxmind.com/download/geoip/database/GeoLite2-Country.tar.gz'
+GEOIP_MAX_AGE = 3 * 24 * 3600
 
 
 def scan_site(result, logger, options, meta):
@@ -102,6 +103,8 @@ def scan_site(result, logger, options, meta):
 
 
 def update_dependencies(options):
+    if not file_is_outdated(GEOIP_DATABASE_PATH, GEOIP_MAX_AGE):
+        return
     GEOIP_DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
     FILES = ['COPYRIGHT.txt', 'LICENSE.txt', 'GeoLite2-Country.mmdb']
     with tempfile.NamedTemporaryFile() as f:
