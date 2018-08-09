@@ -2,10 +2,12 @@
 This test module does a number of network-based checks to determine web- and mailserver
 addresses and the final URL after following any HTTP forwards.
 """
-
+import os
 import re
+import tempfile
 import warnings
 from pathlib import Path
+import tarfile
 from typing import List, Iterable, Tuple
 from urllib.parse import urlparse
 
@@ -15,6 +17,8 @@ from dns import resolver, reversename
 from dns.exception import DNSException
 from geoip2.database import Reader
 from geoip2.errors import AddressNotFoundError
+
+from privacyscanner.utils import download_file, copy_to
 
 name = 'network'
 dependencies = []
@@ -26,6 +30,11 @@ required_keys = ['site_url']
 # content (if threshold not reached we will report
 # that the scanned site is not available via https)
 MINIMUM_SIMILARITY = 0.90
+
+# PrivacyScanner's local copy of the GeoIP database
+# which takes precedence over copies in other locations
+GEOIP_DATABASE_PATH = Path('~/.local/share/privacyscanner/GeoIP/GeoLite2-Country.mmdb').expanduser()
+GEOIP_DOWNLOAD_URL = 'https://geolite.maxmind.com/download/geoip/database/GeoLite2-Country.tar.gz'
 
 
 def scan_site(result, logger, options, meta):
@@ -90,6 +99,19 @@ def scan_site(result, logger, options, meta):
                 final_https_url_content)
             minimum_similarity = options.get('minimum_similarity', MINIMUM_SIMILARITY)
             result['same_content_via_https'] = similarity > minimum_similarity
+
+
+def update_dependencies(options):
+    GEOIP_DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    FILES = ['COPYRIGHT.txt', 'LICENSE.txt', 'GeoLite2-Country.mmdb']
+    with tempfile.NamedTemporaryFile() as f:
+        download_file(GEOIP_DOWNLOAD_URL, f)
+        archive = tarfile.open(f.name)
+        for member in archive.getmembers():
+            base_name = os.path.basename(member.name)
+            if base_name in FILES and member.isfile():
+                with (GEOIP_DATABASE_PATH.parent / base_name).open('wb') as f:
+                    copy_to(archive.extractfile(member), f)
 
 
 def _insert_dns_records(result, logger, options, hostname):
@@ -206,6 +228,7 @@ def _get_geoip_database(options):
         return options['country_database_path']
     except KeyError:
         possible_paths = [
+            GEOIP_DATABASE_PATH,
             Path('~/.local/share/GeoIP/GeoLite2-Country.mmdb').expanduser(),
             Path('/var/lib/GeoIP/GeoLite2-Country.mmdb'),
             Path('/usr/local/var/GeoIP/GeoLite2-Country.mmdb'),
