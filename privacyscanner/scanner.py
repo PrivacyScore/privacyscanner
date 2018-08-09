@@ -192,6 +192,23 @@ def scan_site(args):
         sys.exit(1)
 
 
+def update_dependencies(args):
+    config = load_config(args.config)
+    scan_modules = load_modules(config['SCAN_MODULES'])
+    updated = []
+    for scan_module in scan_modules.values():
+        print(scan_module.name)
+        if hasattr(scan_module, 'update_dependencies'):
+            options = config['SCAN_MODULE_OPTIONS'].get(scan_module.name, {})
+            scan_module.update_dependencies(options)
+            updated.append(scan_module.name)
+    if updated:
+        print(' '.join(updated))
+    else:
+        print('Nothing to update.')
+
+
+
 def print_master_config(args):
     config = load_config(args.config)
     scan_modules = load_modules(config['SCAN_MODULES'])
@@ -235,6 +252,10 @@ def main():
     parser_print_master_config = subparsers.add_parser('print_master_config')
     parser_print_master_config.add_argument('--config', help='Configuration_file')
     parser_print_master_config.set_defaults(func=print_master_config)
+
+    parser_run_workers = subparsers.add_parser('update_dependencies')
+    parser_run_workers.add_argument('--config', help='Configuration_file')
+    parser_run_workers.set_defaults(func=update_dependencies)
 
     args = parser.parse_args()
     if args.command is None:
