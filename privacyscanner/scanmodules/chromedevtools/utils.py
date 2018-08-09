@@ -1,5 +1,11 @@
 import json
 import re
+from pathlib import Path
+
+from tldextract import TLDExtract
+
+
+TLDEXTRACT_CACHE_FILE = Path('~/.local/share/privacyscanner/tldextract/.tld_set').expanduser()
 
 
 class JavaScriptError(Exception):
@@ -35,3 +41,7 @@ def _javascript_stringify(js_expr):
         return __returnValue;
     })();
     """ % js_expr.strip()
+
+
+tldextract = TLDExtract()
+tldextract.cache_file = str(TLDEXTRACT_CACHE_FILE)
