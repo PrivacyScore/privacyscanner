@@ -72,7 +72,10 @@ class GoogleAnalyticsExtractor(Extractor):
                 has_ga_requests = True
         ga['has_requests'] = has_ga_requests
 
-        if has_ga_requests:
+        has_ga_js = ga['has_ga_object'] or ga['has_gat_object']
+        ga['has_ga_js'] = has_ga_js
+
+        if has_ga_requests or has_ga_js:
             if ga['trackers']:
                 trackers_anonymize = [tracker['anonymize_ip'] for tracker in ga['trackers']] # noqa
                 all_set_js = all(trackers_anonymize)
