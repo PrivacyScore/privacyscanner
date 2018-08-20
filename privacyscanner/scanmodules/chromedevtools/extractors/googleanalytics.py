@@ -23,7 +23,7 @@ TRACKER_JS = """
                 info['trackers'].push({
                     'name': tracker.get('name'),
                     'tracking_id': tracker.get('trackingId'),
-                    'anonymize_ip': typeof(anonymize_ip) !== 'undefined' ? anonymize_ip : false
+                    'anonymize_ip': typeof(anonymize_ip) !== 'undefined' ? !!anonymize_ip : false
                 });
             });
         });
@@ -36,7 +36,7 @@ TRACKER_JS = """
             info['trackers'].push({
                 'name': tracker._getName(),
                 'tracking_id': tracker._getAccount(),
-                'anonymize_ip': typeof(anonymize_ip) !== 'undefined' ? anonymize_ip : false
+                'anonymize_ip': typeof(anonymize_ip) !== 'undefined' ? !!anonymize_ip : false
             });
         });
     }
