@@ -31,7 +31,7 @@ def update_dependencies(options):
     max_age = 14 * 24 * 3600
     TLDEXTRACT_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
     if file_is_outdated(TLDEXTRACT_CACHE_FILE, max_age):
-        parse_domain.update(now=True)
+        parse_domain.update(fetch_now=True)
     for extractor_class in EXTRACTOR_CLASSES:
         if hasattr(extractor_class, 'update_dependencies'):
             extractor_class.update_dependencies(options)
