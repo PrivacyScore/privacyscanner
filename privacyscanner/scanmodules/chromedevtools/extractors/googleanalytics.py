@@ -85,8 +85,8 @@ class GoogleAnalyticsExtractor(Extractor):
                 'any_set_js': any_set_js,
                 'num_requests_aip': num_requests_aip,
                 'num_requests_no_aip': num_requests_no_aip,
-                'is_incorrect': ((any_set_js and not all_set_js) or
-                                 (all_set_js and num_requests_no_aip > 0))
+                'aip_ineffective': ((any_set_js and not all_set_js) or
+                                    (all_set_js and num_requests_no_aip > 0))
             }
         if not (ga['has_ga_object'] or ga['has_gat_object']):
             del ga['trackers']
