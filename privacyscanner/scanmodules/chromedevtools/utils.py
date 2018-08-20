@@ -43,5 +43,5 @@ def _javascript_stringify(js_expr):
     """ % js_expr.strip()
 
 
-tldextract = TLDExtract()
-tldextract.cache_file = str(TLDEXTRACT_CACHE_FILE)
+parse_domain = TLDExtract()
+parse_domain.cache_file = str(TLDEXTRACT_CACHE_FILE)

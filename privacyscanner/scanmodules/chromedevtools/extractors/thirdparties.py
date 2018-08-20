@@ -1,4 +1,4 @@
-from privacyscanner.scanmodules.chromedevtools.utils import tldextract
+from privacyscanner.scanmodules.chromedevtools.utils import parse_domain
 from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
 
 
@@ -11,11 +11,11 @@ class ThirdPartyExtractor(Extractor):
         }
         first_party_domains = set()
         for url in (self.result['site_url'], self.result['final_url']):
-            extracted = tldextract.extract(url)
+            extracted = parse_domain(url)
             first_party_domains.add(extracted.registered_domain)
         for request in self.page.request_log:
             request['is_thirdparty'] = False
-            extracted_url = tldextract.extract(request['url'])
+            extracted_url = parse_domain(request['url'])
             parsed_url = request['parsed_url']
             if extracted_url.registered_domain in first_party_domains:
                 continue
@@ -32,5 +32,5 @@ class ThirdPartyExtractor(Extractor):
             domain = cookie['domain']
             if domain.startswith('.'):
                 domain = domain[1:]
-            domain = tldextract.extract(domain).registered_domain
+            domain = parse_domain(domain).registered_domain
             cookie['is_thirdparty'] = domain not in first_party_domains

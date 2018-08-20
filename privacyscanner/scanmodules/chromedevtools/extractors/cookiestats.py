@@ -1,5 +1,5 @@
 from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
-from privacyscanner.scanmodules.chromedevtools.utils import tldextract
+from privacyscanner.scanmodules.chromedevtools.utils import parse_domain
 
 
 class CookieStatsExtractor(Extractor):
@@ -16,7 +16,7 @@ class CookieStatsExtractor(Extractor):
             suffix = 'long' if cookie['lifetime'] > self.long_cookie_time else 'short'
             stats['{}_party_{}'.format(prefix, suffix)] += 1
             if cookie['is_tracker']:
-                tracker = tldextract.extract(cookie['domain'])
+                tracker = parse_domain(cookie['domain'])
                 cookietrackers.add(tracker.registered_domain)
         stats['trackers'] = list(sorted(cookietrackers))
         self.result['cookiestats'] = stats

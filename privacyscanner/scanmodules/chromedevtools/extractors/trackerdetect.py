@@ -15,7 +15,7 @@ except ModuleNotFoundError:
     pass
 from adblockparser import AdblockRules
 
-from privacyscanner.scanmodules.chromedevtools.utils import tldextract
+from privacyscanner.scanmodules.chromedevtools.utils import parse_domain
 from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
 from privacyscanner.utils import download_file
 
@@ -46,7 +46,7 @@ class TrackerDetectExtractor(Extractor):
                 is_tracker = self.rules.should_block(request['url'][:150])
             if is_tracker:
                 request['is_tracker'] = True
-                extracted = tldextract.extract(request['url'])
+                extracted = parse_domain(request['url'])
                 trackers_fqdn.add(extracted.fqdn)
                 trackers_domain.add(extracted.registered_domain)
                 num_tracker_requests += 1
@@ -59,7 +59,7 @@ class TrackerDetectExtractor(Extractor):
             if domain in trackers_fqdn or domain in trackers_domain:
                 is_tracker = True
             elif domain.startswith('.'):
-                reg_domain = tldextract.extract(domain[1:]).registered_domain
+                reg_domain = parse_domain(domain[1:]).registered_domain
                 if reg_domain in trackers_domain:
                     is_tracker = True
 

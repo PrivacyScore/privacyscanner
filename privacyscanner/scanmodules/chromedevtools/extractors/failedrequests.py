@@ -1,7 +1,7 @@
 import dns.resolver
 
 from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
-from privacyscanner.scanmodules.chromedevtools.utils import tldextract
+from privacyscanner.scanmodules.chromedevtools.utils import parse_domain
 
 
 class FailedRequestsExtractor(Extractor):
@@ -30,7 +30,7 @@ class FailedRequestsExtractor(Extractor):
                 # absence of a SOA record for the domain itself, i.e.,
                 # not the netloc of the URL. Unregistered domains
                 # should have no SOA entry, while registered should.
-                domain = tldextract.extract(request['url']).registered_domain
+                domain = parse_domain(request['url']).registered_domain
                 try:
                     dns.resolver.query(domain, 'SOA')
                     domain_registered = True
