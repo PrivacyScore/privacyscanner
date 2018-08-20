@@ -26,7 +26,7 @@ class ImprintExtractor(Extractor):
             if search['resultCount'] == 0:
                 continue
             results = self.page.tab.DOM.getSearchResults(
-                searchId=search['searchId'], fromIndex=0, toIndex=search['resultCount'] - 1)
+                searchId=search['searchId'], fromIndex=0, toIndex=search['resultCount'])
             for node_id in results['nodeIds']:
                 while node_id is not None:
                     node = self.page.tab.DOM.describeNode(nodeId=node_id)['node']
