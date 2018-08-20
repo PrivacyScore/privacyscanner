@@ -76,8 +76,7 @@ class TrackerDetectExtractor(Extractor):
     def _load_rules(self):
         global _adblock_rules_cache
 
-        easylist_path = Path(self.options['easylist_path'])
-        easylist_files = [easylist_path / filename for filename in EASYLIST_FILES]
+        easylist_files = [EASYLIST_PATH / filename for filename in EASYLIST_FILES]
 
         mtime = max(filename.stat().st_mtime for filename in easylist_files)
         if _adblock_rules_cache is not None and _adblock_rules_cache['mtime'] >= mtime:
@@ -93,7 +92,7 @@ class TrackerDetectExtractor(Extractor):
         else:
             lines = []
             for easylist_file in easylist_files:
-                for line in (easylist_path / easylist_file).open():
+                for line in (EASYLIST_PATH / easylist_file).open():
                     # Lines with @@ are exceptions which are not blocked
                     # even if other adblocking rules match. This is done
                     # to fix a few sites. We do not need those exceptions.
