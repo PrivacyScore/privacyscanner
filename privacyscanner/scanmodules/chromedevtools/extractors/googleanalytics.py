@@ -96,6 +96,8 @@ class GoogleAnalyticsExtractor(Extractor):
     @staticmethod
     def _is_google_request(parsed_url):
         # Google uses stats.g.doubleclick.net for customers that have
-        # enabled the Remarketing with Google Analytics feature,
-        if parsed_url.netloc in ('www.google-analytics.com', 'stats.g.doubleclick.net'):
+        # enabled the Remarketing with Google Analytics feature.
+        ga_domains = ('www.google-analytics.com', 'ssl.google-analytics.com',
+                      'stats.g.doubleclick.net')
+        if parsed_url.netloc in ga_domains:
             return any(p in parsed_url.path for p in ('collect', 'utm.gif', 'gtm/js'))
