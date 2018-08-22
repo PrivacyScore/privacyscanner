@@ -76,20 +76,24 @@ class GoogleAnalyticsExtractor(Extractor):
         ga['has_ga_js'] = has_ga_js
 
         if has_ga_requests or has_ga_js:
+            all_set_js = None
+            any_set_js = None
             if ga['trackers']:
-                trackers_anonymize = [tracker['anonymize_ip'] for tracker in ga['trackers']] # noqa
-                all_set_js = all(trackers_anonymize)
-                any_set_js = any(trackers_anonymize)
-            else:
-                all_set_js = None
-                any_set_js = None
+                trackers_anonymize = [tracker['anonymize_ip'] for tracker in ga['trackers']
+                                      if isinstance(tracker.get('anonymize_ip'), bool)] # noqa
+                if trackers_anonymize:
+                    all_set_js = all(trackers_anonymize)
+                    any_set_js = any(trackers_anonymize)
+            aip_ineffective = None
+            if all_set_js is not None and any_set_js is not None:
+                aip_ineffective = ((any_set_js and not all_set_js) or
+                                   (all_set_js and num_requests_no_aip > 0))
             ga['anonymize'] = {
                 'all_set_js': all_set_js,
                 'any_set_js': any_set_js,
                 'num_requests_aip': num_requests_aip,
                 'num_requests_no_aip': num_requests_no_aip,
-                'aip_ineffective': ((any_set_js and not all_set_js) or
-                                    (all_set_js and num_requests_no_aip > 0))
+                'aip_ineffective': aip_ineffective
             }
         if not (ga['has_ga_object'] or ga['has_gat_object']):
             del ga['trackers']
