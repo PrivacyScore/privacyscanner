@@ -197,7 +197,7 @@ class ChromeScan:
                     chrome_error = 'timeout'
             except ChromeBrowserStartupError:
                 if meta.is_first_try:
-                    raise RetryScan('First timeout with Chrome.')
+                    raise RetryScan('Chrome startup problem.')
                 else:
                     chrome_error = 'startup_problem'
         result['chrome_error'] = chrome_error
