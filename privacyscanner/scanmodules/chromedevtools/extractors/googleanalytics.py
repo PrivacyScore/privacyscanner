@@ -79,9 +79,8 @@ class GoogleAnalyticsExtractor(Extractor):
             all_set_js = None
             any_set_js = None
             if ga['trackers']:
-                trackers_anonymize = [tracker['anonymize_ip'] for tracker in ga['trackers']
-                                      if isinstance(tracker.get('anonymize_ip'), bool)] # noqa
-                if trackers_anonymize:
+                trackers_anonymize = [tracker.get('anonymize_ip') for tracker in ga['trackers']]
+                if all(isinstance(aip, bool) for aip in trackers_anonymize):
                     all_set_js = all(trackers_anonymize)
                     any_set_js = any(trackers_anonymize)
             aip_ineffective = None
