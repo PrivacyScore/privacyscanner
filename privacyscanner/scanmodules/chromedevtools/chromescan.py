@@ -186,7 +186,7 @@ class ChromeScan:
 
     def scan(self, result, logger, options, meta, debugging_port=9222):
         scanner = PageScanner(self._extractor_classes)
-        has_timeout = False
+        chrome_error = None
         with ChromeBrowser(debugging_port) as browser:
             try:
                 scanner.scan(browser, result, logger, options)
@@ -194,8 +194,13 @@ class ChromeScan:
                 if meta.is_first_try:
                     raise RetryScan('First timeout with Chrome.')
                 else:
-                    has_timeout = True
-        result['chrome_timeout'] = has_timeout
+                    chrome_error = 'timeout'
+            except ChromeBrowserStartupError:
+                if meta.is_first_try:
+                    raise RetryScan('First timeout with Chrome.')
+                else:
+                    chrome_error = 'startup_problem'
+        result['chrome_error'] = chrome_error
 
 
 class PageScanner:
