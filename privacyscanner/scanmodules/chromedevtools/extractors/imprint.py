@@ -29,7 +29,12 @@ class ImprintExtractor(Extractor):
                 searchId=search['searchId'], fromIndex=0, toIndex=search['resultCount'])
             for node_id in results['nodeIds']:
                 while node_id is not None:
-                    node = self.page.tab.DOM.describeNode(nodeId=node_id)['node']
+                    try:
+                        node = self.page.tab.DOM.describeNode(nodeId=node_id)['node']
+                    except pychrome.CallMethodException:
+                        # For some reason, nodes seem to disappear in-between,
+                        # so just ignore these cases.
+                        break
                     if node['nodeType'] == ELEMENT_NODE and node['nodeName'].lower() == 'a':
                         if not self._is_visible(node_id):
                             break
@@ -47,7 +52,12 @@ class ImprintExtractor(Extractor):
         # for all links, including those, who are not visible to the user.
         if not imprint_link:
             for link in links:
-                link_html = self.page.tab.DOM.getOuterHTML(nodeId=link)['outerHTML']
+                try:
+                    link_html = self.page.tab.DOM.getOuterHTML(nodeId=link)['outerHTML']
+                except pychrome.CallMethodException:
+                    # For some reason, nodes seem to disappear in-between,
+                    # so just ignore these cases.
+                    break
                 for order_id, keyword in enumerate(self.IMPRINT_KEYWORDS):
                     if keyword in link_html:
                         href = self._get_href(link)
