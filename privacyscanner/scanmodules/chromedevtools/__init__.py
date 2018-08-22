@@ -24,7 +24,7 @@ EXTRACTOR_CLASSES = [FinalUrlExtractor, GoogleAnalyticsExtractor,
 def scan_site(result, logger, options, meta):
     chrome_scan = ChromeScan(EXTRACTOR_CLASSES)
     debugging_port = options.get('start_port', 9222) + meta.worker_id
-    chrome_scan.scan(result, logger, options, debugging_port)
+    chrome_scan.scan(result, logger, options, meta, debugging_port)
 
 
 def update_dependencies(options):

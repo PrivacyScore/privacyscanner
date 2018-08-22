@@ -11,6 +11,8 @@ from urllib.parse import urlparse
 import pychrome
 from requests.exceptions import ConnectionError
 
+from privacyscanner.exceptions import RetryScan
+
 # See https://github.com/GoogleChrome/chrome-launcher/blob/master/docs/chrome-flags-for-tools.md
 # See also https://peter.sh/experiments/chromium-command-line-switches/
 CHROME_OPTIONS = [
@@ -182,10 +184,18 @@ class ChromeScan:
     def __init__(self, extractor_classes):
         self._extractor_classes = extractor_classes
 
-    def scan(self, result, logger, options, debugging_port=9222):
+    def scan(self, result, logger, options, meta, debugging_port=9222):
         scanner = PageScanner(self._extractor_classes)
+        has_timeout = False
         with ChromeBrowser(debugging_port) as browser:
-            return scanner.scan(browser, result, logger, options)
+            try:
+                scanner.scan(browser, result, logger, options)
+            except pychrome.TimeoutException:
+                if meta.is_first_try:
+                    raise RetryScan('First timeout with Chrome.')
+                else:
+                    has_timeout = True
+        result['chrome_timeout'] = has_timeout
 
 
 class PageScanner:
