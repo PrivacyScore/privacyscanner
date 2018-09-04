@@ -177,7 +177,7 @@ def scan_site(args):
             except RescheduleLater as e:
                 scan_queue.append(QueueEntry(scan_module_name, num_try, e.not_before))
             except Exception:
-                if num_try <= config['MAX_RETRIES']:
+                if num_try <= config['MAX_TRIES']:
                     scan_queue.append(QueueEntry(scan_module_name, num_try, not_before))
                 has_error = True
                 logger.exception('Scan module `{}` failed.'.format(mod.name))
