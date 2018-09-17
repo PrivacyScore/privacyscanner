@@ -68,7 +68,10 @@ class ImprintExtractor(Extractor):
                     break
 
         if imprint_link:
-            if imprint_link.startswith('/'):
+            if imprint_link.startswith('//'):
+                p = urlparse(self.result['final_url'])
+                imprint_link = '{}:{}'.format(p.scheme, imprint_link)
+            elif imprint_link.startswith('/'):
                 p = urlparse(self.result['final_url'])
                 imprint_link = '{}://{}{}'.format(p.scheme, p.hostname, imprint_link)
             else:
