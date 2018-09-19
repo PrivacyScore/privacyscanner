@@ -19,7 +19,7 @@ class RequestsExtractor(Extractor):
             # is_thirdparty is only availavle if the thirdparties mixin is enabled
             if 'is_thirdparty' in request:
                 request_dict['is_thirdparty'] = request['is_thirdparty']
-            # is_tracker is only available if the trackerdetect mixin is enabled:w
+            # is_tracker is only available if the trackerdetect mixin is enabled
             if 'is_tracker' in request:
                 request_dict['is_tracker'] = request['is_tracker'],
             requests.append(request_dict)
