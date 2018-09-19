@@ -274,12 +274,17 @@ class PageScanner:
         browser.close_tab(self._tab)
         self._reset()
 
-    def _cb_request_will_be_sent(self, request, requestId, timestamp, **kwargs):
+    def _cb_request_will_be_sent(self, request, requestId, timestamp, redirectResponse=None, **kwargs):
         # To avoid reparsing the URL in many places, we parse them all here
         request['parsed_url'] = urlparse(request['url'])
         request['requestId'] = requestId
         request['timestamp'] = timestamp
         self._page.add_request(request)
+
+        # Redirect requests don't have a received response but issue another
+        # "request will be sent" event with a redirectResponse key.
+        if redirectResponse is not None:
+            self._cb_response_received(redirectResponse, requestId, timestamp)
 
     def _cb_response_received(self, response, requestId, timestamp, **kwargs):
         response['requestId'] = requestId
