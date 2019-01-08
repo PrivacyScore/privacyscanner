@@ -7,7 +7,7 @@ setup(
     url='https://privacyscore.org/',
     license='MIT License',
     author='PrivacyScore team',
-    author_email='privacyscore@informatik.uni-hamburg.de',
+    author_email='privacyscore.psi@uni-bamberg.de',
     description='The privacyscanner component scans websites and provides data to PrivacyScore',
     install_requires=['psycopg2-binary', 'toposort', 'dnspython', 'geoip2',
                       'requests', 'adblockeval', 'tldextract', 'pychrome',
