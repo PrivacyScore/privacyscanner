@@ -1,5 +1,6 @@
 import json
 import random
+import shutil
 import subprocess
 import tempfile
 import time
@@ -152,7 +153,12 @@ class ChromeBrowser:
             '--remote-debugging-port={}'.format(self._debugging_port),
             '--user-data-dir={}'.format(user_data_dir)
         ]
-        self._p = subprocess.Popen(['google-chrome'] + CHROME_OPTIONS + extra_opts,
+        program = shutil.which('google-chrome')
+        if program is None:
+            program = shutil.which('chromium')
+        if program is None:
+            raise ChromeBrowserStartupError('Could not find google-chrome or chromium.')
+        self._p = subprocess.Popen([program] + CHROME_OPTIONS + extra_opts,
                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         self.browser = pychrome.Browser(url='http://127.0.0.1:{}'.format(
