@@ -19,6 +19,8 @@ class ThirdPartyExtractor(Extractor):
             parsed_url = request['parsed_url']
             if extracted_url.registered_domain in first_party_domains:
                 continue
+            if request['url'].startswith('data:'):
+                continue
             request['is_thirdparty'] = True
             third_parties['fqdns'].add(extracted_url.fqdn)
             if parsed_url.scheme not in ('http', 'https'):
