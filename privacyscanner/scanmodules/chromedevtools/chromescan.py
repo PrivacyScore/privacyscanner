@@ -279,6 +279,7 @@ class PageScanner:
         request['parsed_url'] = urlparse(request['url'])
         request['requestId'] = requestId
         request['timestamp'] = timestamp
+        request['document_url'] = kwargs.get('documentURL')
         self._page.add_request(request)
 
         # Redirect requests don't have a received response but issue another

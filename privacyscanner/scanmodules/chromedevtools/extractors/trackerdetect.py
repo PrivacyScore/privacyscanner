@@ -1,19 +1,6 @@
-import pickle
-import sys
 from pathlib import Path
 
-# This is a somewhat ugly hack. There are several implementations or re2
-# but none of them except cffi_re2 can be installed without pain. However,
-# adblockparser checks whether he can import re2 and not whether it can
-# import cffi_re2. Therefore we put cffi_re2 into sys.modules as re2
-# so adblockparser will import cffi_re2 when importing re2.
-
-try:
-    import cffi_re2
-    sys.modules['re2'] = cffi_re2
-except ModuleNotFoundError:
-    pass
-from adblockparser import AdblockRules
+from adblockeval import AdblockRules
 
 from privacyscanner.scanmodules.chromedevtools.utils import parse_domain
 from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
@@ -34,20 +21,25 @@ class TrackerDetectExtractor(Extractor):
         trackers_domain = set()
         num_tracker_requests = 0
         blacklist = set()
+        num_evaluations = 0
         for request in self.page.request_log:
             request['is_tracker'] = False
-            if not request['is_thirdparty']:
+            if not request['is_thirdparty'] or request['url'].startswith('data:'):
                 continue
             is_tracker = request['parsed_url'].netloc in blacklist
             if not is_tracker:
                 # Giving only the first 150 characters of an URL is
                 # sufficient to get good matches, so this will speed
                 # up checking quite a bit!
-                is_tracker = self.rules.should_block(request['url'][:150])
+                match_result = self.rules.match(request['url'][:150],
+                                                request['document_url'])
+                is_tracker = match_result.is_match
+                num_evaluations += 1
             if is_tracker:
                 request['is_tracker'] = True
                 extracted = parse_domain(request['url'])
-                trackers_fqdn.add(extracted.fqdn)
+                if extracted.fqdn:
+                    trackers_fqdn.add(extracted.fqdn)
                 trackers_domain.add(extracted.registered_domain)
                 num_tracker_requests += 1
                 blacklist.add(request['parsed_url'].netloc)
@@ -76,39 +68,15 @@ class TrackerDetectExtractor(Extractor):
     def _load_rules(self):
         global _adblock_rules_cache
 
-        easylist_files = [EASYLIST_PATH / filename for filename in EASYLIST_FILES]
-
-        mtime = max(filename.stat().st_mtime for filename in easylist_files)
-        if _adblock_rules_cache is not None and _adblock_rules_cache['mtime'] >= mtime:
-            self.rules = _adblock_rules_cache['rules']
+        if _adblock_rules_cache is not None:
+            self.rules = _adblock_rules_cache
             return
 
-        cache_file = self.options.get('adblockrules_cache')
-        if cache_file:
-            cache_file = Path(cache_file)
-        if cache_file and cache_file.exists() and cache_file.stat().st_mtime >= mtime:
-            with cache_file.open('rb') as f:
-                rules = pickle.load(f)
-        else:
-            lines = []
-            for easylist_file in easylist_files:
-                for line in (EASYLIST_PATH / easylist_file).open():
-                    # Lines with @@ are exceptions which are not blocked
-                    # even if other adblocking rules match. This is done
-                    # to fix a few sites. We do not need those exceptions.
-                    if line.startswith('@@'):
-                        continue
-                    lines.append(line)
-            rules = AdblockRules(lines)
-            if cache_file:
-                with cache_file.open('wb') as f:
-                    pickle.dump(rules, f, pickle.HIGHEST_PROTOCOL)
-
-        _adblock_rules_cache = {
-            'mtime': mtime,
-            'rules': rules
-        }
-        self.rules = rules
+        easylist_files = [EASYLIST_PATH / filename for filename in EASYLIST_FILES]
+        self.rules = AdblockRules(rule_files=easylist_files,
+                                  cache_file=EASYLIST_PATH / 'rules.cache',
+                                  skip_parsing_errors=True)
+        _adblock_rules_cache = self.rules
 
     @staticmethod
     def update_dependencies(options):
