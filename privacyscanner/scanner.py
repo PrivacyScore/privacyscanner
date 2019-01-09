@@ -16,13 +16,8 @@ from urllib.parse import urlparse
 
 from toposort import toposort, toposort_flatten
 
-try:
-    import raven
-    has_raven = True
-except ModuleNotFoundError:
-    has_raven = False
-
 from privacyscanner.filehandlers import DirectoryFileHandler
+from privacyscanner.raven import has_raven, raven
 from privacyscanner.result import Result
 from privacyscanner.scanmeta import ScanMeta
 from privacyscanner.scanmodules import load_modules

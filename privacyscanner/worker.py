@@ -11,15 +11,10 @@ from multiprocessing.connection import wait
 import psutil
 import psycopg2
 
-try:
-    import raven
-    has_raven = True
-except ModuleNotFoundError:
-    has_raven = False
-
 from privacyscanner.exceptions import RetryScan, RescheduleLater
 from privacyscanner.filehandlers import NoOpFileHandler
 from privacyscanner.jobqueue import JobQueue
+from privacyscanner.raven import has_raven, raven
 from privacyscanner.result import Result
 from privacyscanner.scanmeta import ScanMeta
 from privacyscanner.scanmodules import load_modules
