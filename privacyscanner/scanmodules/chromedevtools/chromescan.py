@@ -267,13 +267,17 @@ class PageScanner:
         time_start = time.time()
         while not self._page_loaded and time.time() - time_start < max_wait:
             self._tab.wait(0.5)
-        self._page_interaction()
-        self._tab.wait(5)
+        has_responses = bool(self._page.response_log)
+        if has_responses:
+            self._page_interaction()
+            self._tab.wait(5)
         self._tab.Page.disable()
         self._tab.Debugger.disable()
         self._unregister_network_callbacks()
         self._unregister_security_callbacks()
-        self._extract_information()
+        result['reachable'] = has_responses
+        if has_responses:
+            self._extract_information()
         self._tab.Network.disable()
         self._tab.Security.disable()
         self._tab.stop()
@@ -312,9 +316,9 @@ class PageScanner:
                 'lineNumber': ON_NEW_DOCUMENT_JAVASCRIPT_LINENO
             })['breakpointId']
             self._debugger_attached = True
-            self._tab.Debugger.resume()
 
     def _cb_script_failed_to_parse(self, **kwargs):
+        print('FAILED')
         pass
 
     def _cb_paused(self, **info):
