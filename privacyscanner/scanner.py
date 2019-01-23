@@ -48,6 +48,7 @@ def load_config(config_file):
                 break
         else:
             return config
+    config_file = Path(config_file)
     try:
         with config_file.open() as f:
             code = compile(f.read(), config_file.name, 'exec')
