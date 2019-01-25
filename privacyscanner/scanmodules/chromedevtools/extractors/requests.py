@@ -22,6 +22,13 @@ class RequestsExtractor(Extractor):
             # is_tracker is only available if the trackerdetect mixin is enabled
             if 'is_tracker' in request:
                 request_dict['is_tracker'] = request['is_tracker'],
+            # Add headers if requested
+            # To enable this option, set SCAN_MODULE_OPTIONS in your config file to
+            # {'chromedevtools': {'RequestsExtractor.save_headers': True}}
+            # (or change it in a similar way)
+            if self.options.get('RequestsExtractor.save_headers', False):
+                request_dict['request_headers'] = request["headers"]
+                request_dict['response_headers'] = response["headers"]
             requests.append(request_dict)
         self.result['requests'] = requests
 
