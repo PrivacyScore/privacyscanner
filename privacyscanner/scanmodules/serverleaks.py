@@ -21,6 +21,7 @@ class ServerleaksScanModule(ScanModule):
         scan_site(result, self.logger, self.options, meta)
 
 
+
 def _match_db_dump(content):
     targets = ["SQLite", "CREATE TABLE", "INSERT INTO", "DROP TABLE"]
     matched = False
