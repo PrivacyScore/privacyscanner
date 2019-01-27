@@ -28,6 +28,21 @@ def _match_db_dump(content):
         matched |= target in content
     return matched
 
+def _match_env_file(content):
+    targets = ["TERM", "PATH", "COMPOSER", "INSTALL"]
+    matched = False
+    for target in targets:
+        matched |= target in content
+    return matched
+
+
+def _match_package_file(content):
+    targets = ["name", "author", "contributors", "bugs", "homepage", "version", "license", "keywords", "description",
+               "repository", "main", "private", "scripts", "dependencies", "devDependencies", "engines", "browserslist"]
+    matched = False
+    for target in targets:
+        matched |= target in content
+    return matched
 
 def _concat_sub(url, suffix):
     url_extract = extract(url)
@@ -102,6 +117,12 @@ TRIALS = [
     ('.svn/wc.db', 'SQLite'),
     ('core', 'ELF'),
     ('.DS_Store', 'Bud1'),
+    ('.npmrc', '='),
+    ('package.json', _match_package_file),
+     #('.htaccess', 'unknown'),
+    ('workspace.xml', 'FileEditorManager'),
+    ('.gitlab-ci.yml', 'job'),
+    ('.env', _match_env_file),
 
     # Check for Database dumps
     # sqldump - MySQL/MariaDB
