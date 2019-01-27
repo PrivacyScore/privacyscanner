@@ -123,7 +123,7 @@ TRIALS = [
      #('.htaccess', 'unknown'),
     ('workspace.xml', 'FileEditorManager'),
     ('.gitlab-ci.yml', 'job'),
-
+    ('.env', _match_env_file),
     # Check for Database dumps
     # sqldump - MySQL/MariaDB
     ('dump.db', _match_db_dump),
@@ -161,8 +161,7 @@ TRIALS = [
     # https://infosec.rm-it.de/2018/08/19/scanning-the-alexa-top-1m-sites-for-dockerfiles/
     ('Dockerfile', 'FROM'),
     # https://twitter.com/svblxyz/status/1045013939904532482
-    ('docker.env', '='),
-    ('.env', '='),
+    ('docker.env', _match_env_file),
     # Docker Compose
     ('docker-compose.yml', 'version:'),
 ]
