@@ -339,8 +339,8 @@ class PageScanner:
                     },
                     'args': args
                 })
-            self._tab.Debugger.resume()
             self._receive_log(*call_frames[0]['args'], call_frames[1:])
+        self._tab.Debugger.resume()
 
     def _cb_load_event_fired(self, timestamp, **kwargs):
         self._page_loaded = True
