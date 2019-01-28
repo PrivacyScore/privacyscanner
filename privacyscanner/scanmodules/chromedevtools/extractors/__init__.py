@@ -3,6 +3,7 @@ from .cookies import CookiesExtractor
 from .cookiestats import CookieStatsExtractor
 from .failedrequests import FailedRequestsExtractor
 from .finalurl import FinalUrlExtractor
+from .generatortag import GeneratorTagExtractor
 from .googleanalytics import GoogleAnalyticsExtractor
 from .insecurecontent import InsecureContentExtractor
 from .javascriptlibs import JavaScriptLibsExtractor
