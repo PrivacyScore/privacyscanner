@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.3.2
+-----
+
+* Rebuild packages because 0.3.1 contained some uncomitted changes.
+
+0.3.1
+-----
+
+* Bugfix: JavaScript got never resumed after being paused by the Debugger.
+
 0.3.0
 -----
 
