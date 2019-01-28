@@ -19,7 +19,8 @@ EXTRACTOR_CLASSES = [FinalUrlExtractor, RedirectChainExtractor, GoogleAnalyticsE
                      CertificateExtractor, ThirdPartyExtractor, InsecureContentExtractor,
                      FailedRequestsExtractor, SecurityHeadersExtractor, TrackerDetectExtractor,
                      CookieStatsExtractor, JavaScriptLibsExtractor, ScreenshotExtractor,
-                     ImprintExtractor, HSTSPreloadExtractor, FingerprintingExtractor]
+                     ImprintExtractor, HSTSPreloadExtractor, FingerprintingExtractor,
+                     GeneratorTagExtractor]
 
 EXTRACTOR_CLASSES_HTTPS_RUN = [FinalUrlExtractor, TLSDetailsExtractor, CertificateExtractor,
                                InsecureContentExtractor, SecurityHeadersExtractor,
