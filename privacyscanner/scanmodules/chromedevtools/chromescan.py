@@ -105,7 +105,7 @@ PREFS = {
         }
     },
     'session': {
-        'restore_on_startup': 4, # 4 = Use startup_urls
+        'restore_on_startup': 4,  # 4 = Use startup_urls
         'startup_urls': ['about:blank']
     }
 }
@@ -159,7 +159,7 @@ class ChromeBrowser:
         if program is None:
             raise ChromeBrowserStartupError('Could not find google-chrome or chromium.')
         self._p = subprocess.Popen([program] + CHROME_OPTIONS + extra_opts,
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         self.browser = pychrome.Browser(url='http://127.0.0.1:{}'.format(
             self._debugging_port))

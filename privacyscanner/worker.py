@@ -20,7 +20,6 @@ from privacyscanner.scanmeta import ScanMeta
 from privacyscanner.scanmodules import load_modules
 from privacyscanner.loghandlers import WorkerWritePipeHandler, ScanStreamHandler
 
-
 _JOB_STARTED_QUERY = """
 UPDATE scanner_scaninfo
 SET scan_host = %s,
@@ -187,29 +186,29 @@ class WorkerMaster:
                 self._process_queue_event(event)
 
     def _process_queue_event(self, event):
-            pid, action, args = event
-            worker_info = self._workers[pid]
-            worker_info.ping()
-            if action == 'job_started':
-                scan_id, scan_module_name, time_started, num_tries = args
-                self._event_job_started(scan_id, scan_module_name, time_started)
-                worker_info.notify_job_started(scan_id, scan_module_name)
-            elif action == 'job_finished':
-                self._event_job_finished(
-                    worker_info.scan_id, worker_info.scan_module, time_finished=args[0])
-                worker_info.notify_job_finished()
-            elif action == 'job_failed':
-                self._event_job_failed(worker_info.scan_id, worker_info.scan_module)
-                worker_info.notify_job_failed()
-            elif action == 'log':
-                log_time, level, message = args
-                self._event_job_log(worker_info.scan_id, worker_info.scan_module,
-                                    log_time, level, message)
-            elif action == 'add_file':
-                pass
-            elif action == 'add_debug_file':
-                pass
-            worker_info.ack()
+        pid, action, args = event
+        worker_info = self._workers[pid]
+        worker_info.ping()
+        if action == 'job_started':
+            scan_id, scan_module_name, time_started, num_tries = args
+            self._event_job_started(scan_id, scan_module_name, time_started)
+            worker_info.notify_job_started(scan_id, scan_module_name)
+        elif action == 'job_finished':
+            self._event_job_finished(
+                worker_info.scan_id, worker_info.scan_module, time_finished=args[0])
+            worker_info.notify_job_finished()
+        elif action == 'job_failed':
+            self._event_job_failed(worker_info.scan_id, worker_info.scan_module)
+            worker_info.notify_job_failed()
+        elif action == 'log':
+            log_time, level, message = args
+            self._event_job_log(worker_info.scan_id, worker_info.scan_module,
+                                log_time, level, message)
+        elif action == 'add_file':
+            pass
+        elif action == 'add_debug_file':
+            pass
+        worker_info.ack()
 
     def _event_job_started(self, scan_id, scan_module_name, time_started):
         params = (self.name, time_started, scan_id, scan_module_name)
@@ -318,15 +317,15 @@ class Worker:
                     job.scan_module.scan_site(result, logger, job.options, scan_meta)
                 except RetryScan:
                     self._job_queue.report_failure()
-                    self._notify_master('job_failed', (datetime.today(), ))
+                    self._notify_master('job_failed', (datetime.today(),))
                 except RescheduleLater as e:
                     self._job_queue.reschedule(e.not_before)
                     self._job_queue.report_result(result.get_updates())
-                    self._notify_master('job_finished', (datetime.today(), ))
+                    self._notify_master('job_finished', (datetime.today(),))
                 except Exception:
                     logger.exception('Scan module `{}` failed.'.format(job.scan_module.name))
                     self._job_queue.report_failure()
-                    self._notify_master('job_failed', (datetime.today(), ))
+                    self._notify_master('job_failed', (datetime.today(),))
                     if self._raven_client:
                         self._raven_client.captureException(tags={
                             'scan_id': job.scan_id,
@@ -334,7 +333,7 @@ class Worker:
                         }, extra={'result': result.get_results()})
                 else:
                     self._job_queue.report_result(result.get_updates())
-                    self._notify_master('job_finished', (datetime.today(), ))
+                    self._notify_master('job_finished', (datetime.today(),))
                 finally:
                     os.chdir(old_cwd)
                     kill_everything(self._pid, only_children=True)

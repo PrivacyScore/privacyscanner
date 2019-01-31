@@ -4,7 +4,6 @@ from pathlib import Path
 
 from tldextract import TLDExtract
 
-
 TLDEXTRACT_CACHE_FILE = Path('~/.local/share/privacyscanner/tldextract/.tld_set').expanduser()
 
 

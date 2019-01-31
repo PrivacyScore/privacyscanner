@@ -65,5 +65,3 @@ class Result(object):
 
     def get_results(self):
         return self._result_dict
-
-

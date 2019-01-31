@@ -10,4 +10,3 @@ try:
 except ModuleNotFoundError:
     raven = None
     has_raven = False
-

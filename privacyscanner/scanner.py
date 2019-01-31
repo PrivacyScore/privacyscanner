@@ -25,7 +25,6 @@ from privacyscanner import defaultconfig
 from privacyscanner.loghandlers import ScanFileHandler, ScanStreamHandler
 from privacyscanner.exceptions import RescheduleLater, RetryScan
 
-
 CONFIG_LOCATIONS = [
     Path('~/.config/privacyscanner/config.py').expanduser(),
     Path('/etc/privacyscanner/config.py')
@@ -84,11 +83,11 @@ def run_workers(args):
 
 def scan_site(args):
     config = load_config(args.config)
-    
+
     site_parsed = urlparse(args.site)
     if site_parsed.scheme not in ('http', 'https'):
         raise CommandError('Invalid site: {}'.format(args.site))
-    
+
     results_dir = args.results
     if results_dir is None:
         results_dir = slugify(site_parsed.netloc) + '_'
@@ -204,7 +203,6 @@ def update_dependencies(args):
         print('Nothing to update.')
 
 
-
 def print_master_config(args):
     config = load_config(args.config)
     scan_modules = load_modules(config['SCAN_MODULES'])
@@ -229,19 +227,19 @@ def main():
     parser_run_workers = subparsers.add_parser('run_workers')
     parser_run_workers.add_argument('--config', help='Configuration_file')
     parser_run_workers.set_defaults(func=run_workers)
-    
+
     parser_scan = subparsers.add_parser('scan')
     parser_scan.add_argument('site', help='Site to scan')
     parser_scan.add_argument('--config', help='Configuration_file')
     parser_scan.add_argument('--results', help='Directory to store results')
     parser_scan.add_argument('--import-results', dest='import_results',
-            help='Import JSON results from a file before scanning')
+                             help='Import JSON results from a file before scanning')
     parser_scan.add_argument('--scans', dest='scan_modules',
                              type=lambda scans: [x.strip() for x in scans.split(',')],
                              help='Comma separated list of scan modules')
     parser_scan.add_argument('--skip-dependencies', action='store_true',
                              help='Do not run dependencies that are not explicitly '
-                             'specified using --scans')
+                                  'specified using --scans')
     parser_scan.add_argument('--print', dest='print_result', action='store_true')
     parser_scan.set_defaults(func=scan_site)
 
