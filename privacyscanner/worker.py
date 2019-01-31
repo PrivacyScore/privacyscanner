@@ -323,7 +323,7 @@ class Worker:
                     self._job_queue.report_result(result.get_updates())
                     self._notify_master('job_finished', (datetime.today(),))
                 except Exception:
-                    logger.exception('Scan module `{}` failed.'.format(job.scan_module.name))
+                    logger.exception('Scan module `%s` failed.', job.scan_module.name)
                     self._job_queue.report_failure()
                     self._notify_master('job_failed', (datetime.today(),))
                     if self._raven_client:

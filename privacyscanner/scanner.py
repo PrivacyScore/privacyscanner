@@ -160,13 +160,13 @@ def scan_site(args):
         with tempfile.TemporaryDirectory() as temp_dir:
             old_cwd = os.getcwd()
             os.chdir(temp_dir)
-            logger.info('Starting {}'.format(mod.name))
+            logger.info('Starting %s', mod.name)
             try:
                 mod.scan_site(result, logger, options, scan_meta)
             except RetryScan:
                 if num_try <= config['MAX_TRIES']:
                     scan_queue.append(QueueEntry(scan_module_name, num_try, not_before))
-                    logger.info('Scan module `{}` will be retried'.format(mod.name))
+                    logger.info('Scan module `%s` will be retried', mod.name)
                 else:
                     has_error = True
             except RescheduleLater as e:
@@ -175,13 +175,13 @@ def scan_site(args):
                 if num_try <= config['MAX_TRIES']:
                     scan_queue.append(QueueEntry(scan_module_name, num_try, not_before))
                 has_error = True
-                logger.exception('Scan module `{}` failed.'.format(mod.name))
+                logger.exception('Scan module `%s` failed.', mod.name)
             finally:
                 os.chdir(old_cwd)
                 with result_file.open('w') as f:
                     json.dump(result.get_results(), f, indent=2, sort_keys=True)
                     f.write('\n')
-            logger.info('Finished {}'.format(mod.name))
+            logger.info('Finished %s', mod.name)
     pprint.pprint(result.get_results())
     if has_error:
         sys.exit(1)
