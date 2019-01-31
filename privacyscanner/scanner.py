@@ -117,7 +117,8 @@ def scan_site(args):
     except IOError as e:
         raise CommandError('Could not write result JSON: {}'.format(e)) from e
 
-    scan_modules = load_modules(config['SCAN_MODULES'])
+    scan_modules = load_modules(config['SCAN_MODULES'],
+                                       config['SCAN_MODULE_OPTIONS'])
     scan_module_names = args.scan_modules
 
     if scan_module_names is None:
@@ -148,21 +149,20 @@ def scan_site(args):
             # noinspection PyTypeChecker
             while datetime.utcnow() < not_before:
                 time.sleep(0.5)
-        num_try += 1
         mod = scan_modules[scan_module_name]
+        num_try += 1
         log_filename = (results_dir / (mod.name + '.log')).name
         file_handler = ScanFileHandler(log_filename)
         logger = logging.Logger(mod.name)
         logger.addHandler(stream_handler)
         logger.addHandler(file_handler)
-        options = config['SCAN_MODULE_OPTIONS'].get(mod.name, {})
         scan_meta = ScanMeta(worker_id=0, num_tries=num_try)
         with tempfile.TemporaryDirectory() as temp_dir:
             old_cwd = os.getcwd()
             os.chdir(temp_dir)
             logger.info('Starting %s', mod.name)
             try:
-                mod.scan_site(result, logger, options, scan_meta)
+                mod.scan_site(result, logger, scan_meta)
             except RetryScan:
                 if num_try <= config['MAX_TRIES']:
                     scan_queue.append(QueueEntry(scan_module_name, num_try, not_before))
@@ -189,13 +189,13 @@ def scan_site(args):
 
 def update_dependencies(args):
     config = load_config(args.config)
-    scan_modules = load_modules(config['SCAN_MODULES'])
+    scan_modules = load_modules(config['SCAN_MODULES'],
+                                config['SCAN_MODULE_OPTIONS'])
     updated = []
     for scan_module in scan_modules.values():
         print(scan_module.name)
         if hasattr(scan_module, 'update_dependencies'):
-            options = config['SCAN_MODULE_OPTIONS'].get(scan_module.name, {})
-            scan_module.update_dependencies(options)
+            scan_module.update_dependencies()
             updated.append(scan_module.name)
     if updated:
         print(' '.join(updated))

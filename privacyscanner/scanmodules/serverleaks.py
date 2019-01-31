@@ -9,10 +9,16 @@ from requests.exceptions import ConnectionError
 from requests.models import Response
 from tldextract import extract
 
+from privacyscanner.scanmodules import ScanModule
 
-name = 'serverleak'
-dependencies = ['network']
-required_keys = ['final_url']
+
+class ServerleaksScanModule(ScanModule):
+    name = 'serverleak'
+    dependencies = ['network']
+    required_keys = ['final_url']
+
+    def scan_site(self, result, logger, meta):
+        scan_site(result, logger, self.options, meta)
 
 
 def _match_db_dump(content):

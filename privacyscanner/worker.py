@@ -287,8 +287,8 @@ class Worker:
         self._raven_client = None
         if has_raven and raven_dsn:
             self._raven_client = raven.Client(raven_dsn)
-        self._job_queue = JobQueue(db_dsn, load_modules(scan_module_list),
-                                   scan_module_options, max_tries)
+        scan_modules = load_modules(scan_module_list, scan_module_options)
+        self._job_queue = JobQueue(db_dsn, scan_modules, max_tries)
 
     def run(self):
         while self._max_executions > 0:
@@ -314,7 +314,7 @@ class Worker:
                 old_cwd = os.getcwd()
                 os.chdir(temp_dir)
                 try:
-                    job.scan_module.scan_site(result, logger, job.options, scan_meta)
+                    job.scan_module.scan_site(result, logger, scan_meta)
                 except RetryScan:
                     self._job_queue.report_failure()
                     self._notify_master('job_failed', (datetime.today(),))

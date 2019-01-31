@@ -18,12 +18,18 @@ from dns.exception import DNSException
 from geoip2.database import Reader
 from geoip2.errors import AddressNotFoundError
 
+from privacyscanner.scanmodules import ScanModule
 from privacyscanner.utils import download_file, copy_to, file_is_outdated
 
 
-name = 'network'
-dependencies = []
-required_keys = ['site_url']
+class NetworkScanModule(ScanModule):
+    name = 'network'
+    dependencies = []
+    required_keys = ['site_url']
+
+    def scan_site(self, result, logger, meta):
+        scan_site(result, logger, self.options, meta)
+
 
 # The minimum Jaccard coefficient required for the
 # comparison of http and https version of a site

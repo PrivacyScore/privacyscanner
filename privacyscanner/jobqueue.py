@@ -59,7 +59,6 @@ WHERE scan_id = %s AND scan_module = %s
 class Job(NamedTuple):
     scan_id: int
     scan_module: object
-    options: dict
     current_result: dict
     num_tries: int
     dependency_order: int
@@ -67,10 +66,9 @@ class Job(NamedTuple):
 
 
 class JobQueue:
-    def __init__(self, dsn, scan_modules, scan_module_options, max_tries):
+    def __init__(self, dsn, scan_modules, max_tries):
         self._dsn = dsn
         self._scan_modules = scan_modules
-        self._scan_module_options = scan_module_options
         self._available_modules = tuple(self._scan_modules.keys())
         self._max_tries = max_tries
         self._last_job = None
@@ -102,13 +100,12 @@ class JobQueue:
             if job:
                 job_id, scan_id, scan_module_name, num_tries, dependency_order, priority = job
                 scan_module = self._scan_modules[scan_module_name]
-                options = self._scan_module_options.get(scan_module_name, {})
                 if scan_module.required_keys:
                     c.execute(_FETCH_RESULT_QUERY, (scan_id, tuple(scan_module.required_keys)))
                     result = dict(c.fetchall())
                 else:
                     result = {}
-                job = Job(scan_id, scan_module, options, result, num_tries, dependency_order, priority)
+                job = Job(scan_id, scan_module, result, num_tries, dependency_order, priority)
                 self._last_job = job
                 return job
 
