@@ -92,7 +92,7 @@ def scan_site(args):
     if results_dir is None:
         results_dir = slugify(site_parsed.netloc) + '_'
         results_dir += hashlib.sha512(args.site.encode()).hexdigest()[:10]
-    results_dir = Path(results_dir)
+    results_dir = Path(results_dir).resolve()
     try:
         results_dir.mkdir(exist_ok=True)
     except IOError as e:
@@ -141,6 +141,8 @@ def scan_site(args):
     has_error = False
     result = Result(result_json, DirectoryFileHandler(results_dir))
     stream_handler = ScanStreamHandler()
+    logs_dir = results_dir / 'logs'
+    logs_dir.mkdir(exist_ok=True)
     scan_queue = [QueueEntry(mod_name, 0, None) for mod_name in scan_module_names]
     scan_queue.reverse()
     while scan_queue:
@@ -151,8 +153,8 @@ def scan_site(args):
                 time.sleep(0.5)
         mod = scan_modules[scan_module_name]
         num_try += 1
-        log_filename = (results_dir / (mod.name + '.log')).name
-        file_handler = ScanFileHandler(log_filename)
+        log_filename = (logs_dir / (mod.name + '.log'))
+        file_handler = ScanFileHandler(str(log_filename))
         logger = logging.Logger(mod.name)
         logger.addHandler(stream_handler)
         logger.addHandler(file_handler)
