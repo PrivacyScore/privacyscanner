@@ -225,16 +225,16 @@ def main():
     subparsers = parser.add_subparsers(dest='command')
 
     parser_run_workers = subparsers.add_parser('run_workers')
-    parser_run_workers.add_argument('--config', help='Configuration_file')
+    parser_run_workers.add_argument('-c', '--config', help='Configuration_file')
     parser_run_workers.set_defaults(func=run_workers)
 
     parser_scan = subparsers.add_parser('scan')
     parser_scan.add_argument('site', help='Site to scan')
-    parser_scan.add_argument('--config', help='Configuration_file')
+    parser_scan.add_argument('-c', '--config', help='Configuration_file')
     parser_scan.add_argument('--results', help='Directory to store results')
     parser_scan.add_argument('--import-results', dest='import_results',
                              help='Import JSON results from a file before scanning')
-    parser_scan.add_argument('--scans', dest='scan_modules',
+    parser_scan.add_argument('-m', '--scan-modules', dest='scan_modules',
                              type=lambda scans: [x.strip() for x in scans.split(',')],
                              help='Comma separated list of scan modules')
     parser_scan.add_argument('--skip-dependencies', action='store_true',
@@ -244,7 +244,7 @@ def main():
     parser_scan.set_defaults(func=scan_site)
 
     parser_print_master_config = subparsers.add_parser('print_master_config')
-    parser_print_master_config.add_argument('--config', help='Configuration_file')
+    parser_print_master_config.add_argument('-c', '--config', help='Configuration_file')
     parser_print_master_config.set_defaults(func=print_master_config)
 
     parser_run_workers = subparsers.add_parser('update_dependencies')
