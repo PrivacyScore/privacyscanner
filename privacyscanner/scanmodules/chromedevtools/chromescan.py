@@ -248,6 +248,7 @@ class PageScanner:
         self._tab.Debugger.scriptParsed = self._cb_script_parsed
         self._tab.Debugger.scriptFailedToParse = self._cb_script_failed_to_parse
         self._tab.Debugger.paused = self._cb_paused
+        self._tab.Debugger.resumed = self._cb_resumed
         self._tab.Debugger.enable()
         # Pause the JavaScript before we navigate to the page. This
         # gives us some time to setup the debugger before any JavaScript
@@ -316,12 +317,14 @@ class PageScanner:
                 'lineNumber': ON_NEW_DOCUMENT_JAVASCRIPT_LINENO
             })['breakpointId']
             self._debugger_attached = True
+        if self._debugger_paused:
+            self._tab.Debugger.resume()
 
     def _cb_script_failed_to_parse(self, **kwargs):
-        print('FAILED')
         pass
 
     def _cb_paused(self, **info):
+        self._debugger_paused = True
         if self._log_breakpoint in info['hitBreakpoints']:
             call_frames = []
             expression = ("typeof(arguments) !== 'undefined' ? "
@@ -340,7 +343,11 @@ class PageScanner:
                     'args': args
                 })
             self._receive_log(*call_frames[0]['args'], call_frames[1:])
-        self._tab.Debugger.resume()
+        if self._debugger_attached:
+            self._tab.Debugger.resume()
+
+    def _cb_resumed(self, **info):
+        self._debugger_paused = False
 
     def _cb_load_event_fired(self, timestamp, **kwargs):
         self._page_loaded = True
@@ -425,6 +432,7 @@ class PageScanner:
     def _reset(self):
         self._page_loaded = False
         self._debugger_attached = False
+        self._debugger_paused = False
         self._log_breakpoint = None
         self._page = None
         self._extractors = []
