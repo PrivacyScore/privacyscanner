@@ -39,5 +39,9 @@ class TLSDetailsExtractor(Extractor):
                 continue
             details[camelcase_to_underscore(key)] = value
 
+        https_redirect = None
+        if self.result['site_url'].startswith('http://'):
+            https_redirect = self.result['final_url'].startswith('https://')
         self.result['tls']['has_tls'] = True
+        self.result['tls']['https_redirect'] = https_redirect
         self.result['tls'].update(details)
