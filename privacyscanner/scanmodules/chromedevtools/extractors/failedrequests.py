@@ -20,7 +20,8 @@ class FailedRequestsExtractor(Extractor):
             try:
                 request = requests_lookup[failed_request['requestId']]
             except KeyError:
-                self.logger.error('Could not find request: {}'.format(failed_request))
+                # Some requests will never be sent because they for example
+                # use an invalid URL scheme, so no request will be triggered.
                 continue
             if 'net::ERR_NAME_NOT_RESOLVED' in error_text:
                 error_type = 'dns-not-resolved'
