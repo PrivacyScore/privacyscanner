@@ -476,12 +476,15 @@ class Page:
         self.response_log.append(response)
         self._response_lookup[response['requestId']].append(response)
 
-    def get_final_response_by_id(self, request_id):
-        return self.get_response_chain_by_id(request_id)[-1]
+    def get_final_response_by_id(self, request_id, fail_silently=False):
+        response = self.get_response_chain_by_id(request_id, fail_silently)
+        return response[-1] if response is not None else None
 
-    def get_response_chain_by_id(self, request_id):
+    def get_response_chain_by_id(self, request_id, fail_silently=False):
         if request_id not in self._response_lookup:
-            raise KeyError('No response for this request id.')
+            if fail_silently:
+                return None
+            raise KeyError('No response for request id {}.'.format(request_id))
         return self._response_lookup[request_id]
 
     @property
