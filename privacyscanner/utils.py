@@ -54,3 +54,13 @@ def file_is_outdated(path, max_age):
         return path.stat().st_mtime + max_age < time.time()
     except FileNotFoundError:
         return True
+
+
+def set_default_options(target, defaults):
+    for key, value in defaults.items():
+        if key in target:
+            new_target = target[key]
+            if isinstance(new_target, dict):
+                set_default_options(new_target, value)
+        else:
+            target[key] = value
