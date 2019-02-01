@@ -5,6 +5,7 @@ import subprocess
 import tempfile
 import time
 import warnings
+from base64 import b64decode
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -196,7 +197,7 @@ class ChromeScan:
         chrome_error = None
         with ChromeBrowser(debugging_port) as browser:
             try:
-                scanner.scan(browser, result, logger, options)
+                content = scanner.scan(browser, result, logger, options)
             except pychrome.TimeoutException:
                 if meta.is_first_try:
                     raise RetryScan('First timeout with Chrome.')
@@ -208,6 +209,7 @@ class ChromeScan:
                 else:
                     chrome_error = 'startup_problem'
         result['chrome_error'] = chrome_error
+        return content
 
 
 class PageScanner:
@@ -281,6 +283,12 @@ class PageScanner:
         if has_responses:
             self._page_interaction()
             self._tab.wait(5)
+
+        response = self._page.final_response
+        res = self._tab.Page.getResourceContent(frameId=response['extra']['frameId'],
+                                                url=response['url'])
+        content = b64decode(res['content']) if res['base64Encoded'] else res['content'].encode()
+
         self._tab.Page.disable()
         if javascript_enabled:
             self._tab.Debugger.disable()
@@ -294,6 +302,8 @@ class PageScanner:
         self._tab.stop()
         browser.close_tab(self._tab)
         self._reset()
+
+        return content
 
     def _cb_request_will_be_sent(self, request, requestId, redirectResponse=None, **kwargs):
         # To avoid reparsing the URL in many places, we parse them all here
