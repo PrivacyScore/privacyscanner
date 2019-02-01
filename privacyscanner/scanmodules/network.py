@@ -40,7 +40,7 @@ MINIMUM_SIMILARITY = 0.90
 
 # PrivacyScanner's local copy of the GeoIP database
 # which takes precedence over copies in other locations
-GEOIP_DATABASE_PATH = Path('~/.local/share/privacyscanner/GeoIP/GeoLite2-Country.mmdb').expanduser()
+GEOIP_DATABASE_PATH = Path('GeoIP/GeoLite2-Country.mmdb')
 GEOIP_DOWNLOAD_URL = 'https://geolite.maxmind.com/download/geoip/database/GeoLite2-Country.tar.gz'
 GEOIP_MAX_AGE = 3 * 24 * 3600
 
@@ -110,9 +110,10 @@ def scan_site(result, logger, options, meta):
 
 
 def update_dependencies(options):
-    if not file_is_outdated(GEOIP_DATABASE_PATH, GEOIP_MAX_AGE):
+    geoip_database_path = _get_geoip_database(options)
+    if not file_is_outdated(geoip_database_path, GEOIP_MAX_AGE):
         return
-    GEOIP_DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    geoip_database_path.parent.mkdir(parents=True, exist_ok=True)
     FILES = ['COPYRIGHT.txt', 'LICENSE.txt', 'GeoLite2-Country.mmdb']
     with tempfile.NamedTemporaryFile() as f:
         download_file(GEOIP_DOWNLOAD_URL, f)
@@ -120,7 +121,7 @@ def update_dependencies(options):
         for member in archive.getmembers():
             base_name = os.path.basename(member.name)
             if base_name in FILES and member.isfile():
-                with (GEOIP_DATABASE_PATH.parent / base_name).open('wb') as f:
+                with (geoip_database_path.parent / base_name).open('wb') as f:
                     copy_to(archive.extractfile(member), f)
 
 
@@ -151,7 +152,7 @@ def _insert_dns_records(result, logger, options, hostname):
 
 def _insert_geoip(result, logger, options):
     # GeoIP
-    reader = Reader(_get_geoip_database(options))
+    reader = Reader(str(_get_geoip_database(options)))
 
     result['a_locations'], result['a_locations_unknown'] = _get_countries(
         result['a_records'], reader)
@@ -235,18 +236,6 @@ def _jaccard_index(a: bytes, b: bytes) -> float:
 
 def _get_geoip_database(options):
     try:
-        return options['country_database_path']
+        return Path(options['country_database_path'])
     except KeyError:
-        possible_paths = [
-            GEOIP_DATABASE_PATH,
-            Path('~/.local/share/GeoIP/GeoLite2-Country.mmdb').expanduser(),
-            Path('/var/lib/GeoIP/GeoLite2-Country.mmdb'),
-            Path('/usr/local/var/GeoIP/GeoLite2-Country.mmdb'),
-            Path('/usr/local/share/GeoIP/GeoLite2-Country.mmdb'),
-            Path('/usr/share/GeoIP/GeoLite2-Country.mmdb'),
-        ]
-        for p in possible_paths:
-            if p.exists():
-                return str(p)
-    raise RuntimeError('Could not find GeoIP database. '
-                       'Please specify country_database_path option.')
+        return options['storage_path'] / GEOIP_DATABASE_PATH
