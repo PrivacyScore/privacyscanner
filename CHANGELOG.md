@@ -1,6 +1,15 @@
 Changelog
 =========
 
+0.4.0
+-----
+
+* Use classes for scan modules instead of python modules
+* Improve command line arguments (-c for config, -m for scan modules)
+* Add redirect\_chain key to result (chromedevtools)
+* Change data structure for requests and responses (chromedevtools)
+* Make Debugger resumption more robust (chromedevtools)
+
 0.3.2
 -----
 
