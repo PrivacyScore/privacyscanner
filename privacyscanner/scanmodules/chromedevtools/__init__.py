@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from privacyscanner.scanmodules import ScanModule
 from privacyscanner.scanmodules.chromedevtools.chromescan import ChromeScan
 from privacyscanner.scanmodules.chromedevtools.extractors import FinalUrlExtractor, \
@@ -22,6 +24,11 @@ class ChromeDevtoolsScanModule(ScanModule):
     dependencies = []
     required_keys = ['site_url']
 
+    def __init__(self, options):
+        super().__init__(options)
+        cache_file = self.options['storage_path'] / TLDEXTRACT_CACHE_FILE
+        parse_domain.cache_file = str(cache_file)
+
     def scan_site(self, result, logger, meta):
         chrome_scan = ChromeScan(EXTRACTOR_CLASSES)
         debugging_port = self.options.get('start_port', 9222) + meta.worker_id
@@ -29,8 +36,9 @@ class ChromeDevtoolsScanModule(ScanModule):
 
     def update_dependencies(self):
         max_age = 14 * 24 * 3600
-        TLDEXTRACT_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
-        if file_is_outdated(TLDEXTRACT_CACHE_FILE, max_age):
+        cache_file = Path(parse_domain.cache_file)
+        cache_file.parent.mkdir(parents=True, exist_ok=True)
+        if file_is_outdated(cache_file, max_age):
             parse_domain.update(fetch_now=True)
         for extractor_class in EXTRACTOR_CLASSES:
             if hasattr(extractor_class, 'update_dependencies'):

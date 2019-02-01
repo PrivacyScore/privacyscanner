@@ -4,7 +4,7 @@ from pathlib import Path
 
 from tldextract import TLDExtract
 
-TLDEXTRACT_CACHE_FILE = Path('~/.local/share/privacyscanner/tldextract/.tld_set').expanduser()
+TLDEXTRACT_CACHE_FILE = Path('tldextract/.tld_set')
 
 
 class JavaScriptError(Exception):
@@ -43,4 +43,3 @@ def _javascript_stringify(js_expr):
 
 
 parse_domain = TLDExtract()
-parse_domain.cache_file = str(TLDEXTRACT_CACHE_FILE)
