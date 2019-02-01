@@ -6,6 +6,7 @@ from .finalurl import FinalUrlExtractor
 from .googleanalytics import GoogleAnalyticsExtractor
 from .insecurecontent import InsecureContentExtractor
 from .javascriptlibs import JavaScriptLibsExtractor
+from .redirectchain import RedirectChainExtractor
 from .requests import RequestsExtractor
 from .securityheaders import SecurityHeadersExtractor
 from .thirdparties import ThirdPartyExtractor

@@ -286,26 +286,26 @@ class PageScanner:
         browser.close_tab(self._tab)
         self._reset()
 
-    def _cb_request_will_be_sent(self, request, requestId, timestamp, redirectResponse=None, **kwargs):
+    def _cb_request_will_be_sent(self, request, requestId, redirectResponse=None, **kwargs):
         # To avoid reparsing the URL in many places, we parse them all here
         request['parsed_url'] = urlparse(request['url'])
         request['requestId'] = requestId
-        request['timestamp'] = timestamp
         request['document_url'] = kwargs.get('documentURL')
+        request['extra'] = kwargs
         self._page.add_request(request)
 
         # Redirect requests don't have a received response but issue another
         # "request will be sent" event with a redirectResponse key.
         if redirectResponse is not None:
-            self._cb_response_received(redirectResponse, requestId, timestamp)
+            self._cb_response_received(redirectResponse, requestId)
 
-    def _cb_response_received(self, response, requestId, timestamp, **kwargs):
+    def _cb_response_received(self, response, requestId, **kwargs):
         response['requestId'] = requestId
-        response['timestamp'] = timestamp
         headers_lower = {}
         for header_name, value in response['headers'].items():
             headers_lower[header_name.lower()] = value
         response['headers_lower'] = headers_lower
+        response['extra'] = kwargs
         self._page.add_response(response)
 
     def _cb_script_parsed(self, **script):

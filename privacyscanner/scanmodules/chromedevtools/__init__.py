@@ -1,21 +1,20 @@
 from privacyscanner.scanmodules import ScanModule
 from privacyscanner.scanmodules.chromedevtools.chromescan import ChromeScan
 from privacyscanner.scanmodules.chromedevtools.extractors import FinalUrlExtractor, \
-    GoogleAnalyticsExtractor, CookiesExtractor, RequestsExtractor, TLSDetailsExtractor, \
-    CertificateExtractor, ThirdPartyExtractor, InsecureContentExtractor, \
+    GoogleAnalyticsExtractor, CookiesExtractor, RequestsExtractor,  RedirectChainExtractor, \
+    TLSDetailsExtractor, CertificateExtractor, ThirdPartyExtractor, InsecureContentExtractor, \
     FailedRequestsExtractor, SecurityHeadersExtractor, TrackerDetectExtractor, \
     CookieStatsExtractor, JavaScriptLibsExtractor, ScreenshotExtractor, ImprintExtractor
 from privacyscanner.scanmodules.chromedevtools.utils import TLDEXTRACT_CACHE_FILE, parse_domain
 from privacyscanner.utils import file_is_outdated
 
 
-EXTRACTOR_CLASSES = [FinalUrlExtractor, GoogleAnalyticsExtractor,
+EXTRACTOR_CLASSES = [FinalUrlExtractor, RedirectChainExtractor, GoogleAnalyticsExtractor,
                      CookiesExtractor, RequestsExtractor, TLSDetailsExtractor,
-                     CertificateExtractor, ThirdPartyExtractor,
-                     InsecureContentExtractor, FailedRequestsExtractor,
-                     SecurityHeadersExtractor, TrackerDetectExtractor,
-                     CookieStatsExtractor, JavaScriptLibsExtractor,
-                     ScreenshotExtractor, ImprintExtractor]
+                     CertificateExtractor, ThirdPartyExtractor, InsecureContentExtractor,
+                     FailedRequestsExtractor, SecurityHeadersExtractor, TrackerDetectExtractor,
+                     CookieStatsExtractor, JavaScriptLibsExtractor, ScreenshotExtractor,
+                     ImprintExtractor]
 
 
 class ChromeDevtoolsScanModule(ScanModule):
