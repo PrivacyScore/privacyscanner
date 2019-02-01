@@ -379,7 +379,7 @@ class PageScanner:
         self._page.security_state_log.append(state)
 
     def _cb_loading_failed(self, **failed_request):
-        self._page.failed_request_log.append(failed_request)
+        self._page.add_failed_request(failed_request)
 
     def _register_network_callbacks(self):
         self._tab.Network.requestWillBeSent = self._cb_request_will_be_sent
@@ -471,6 +471,9 @@ class Page:
 
     def add_request(self, request):
         self.request_log.append(request)
+
+    def add_failed_request(self, failed_request):
+        self.failed_request_log.append(failed_request)
 
     def add_response(self, response):
         self.response_log.append(response)
