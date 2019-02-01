@@ -21,9 +21,9 @@ class CertificateExtractor(Extractor):
                 cert_chain = explanation['certificate']
                 break
         if cert_chain:
-            if self.result['tls']['has_tls'] is None:
-                self.result['tls']['has_tls'] = True
-            self.result['tls']['certificate'] = self._get_certificate_info(cert_chain)
+            if self.result['https']['has_tls'] is None:
+                self.result['https']['has_tls'] = True
+            self.result['https']['certificate'] = self._get_certificate_info(cert_chain)
 
     def _get_certificate_info(self, cert_chain):
         # See https://cryptography.io/en/latest/x509/reference/#cryptography.x509.Certificate

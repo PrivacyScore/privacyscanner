@@ -4,7 +4,7 @@ from privacyscanner.scanmodules.chromedevtools.utils import camelcase_to_undersc
 
 class TLSDetailsExtractor(Extractor):
     def extract_information(self):
-        self.result['tls'] = {'has_tls': None}
+        self.result['https'] = {'has_tls': None, 'redirect': None}
 
         response = self.page.final_response
         if response is None:
@@ -12,7 +12,8 @@ class TLSDetailsExtractor(Extractor):
             return
 
         if 'securityDetails' not in response:
-            self.result['tls']['has_tls'] = False
+            self.result['https']['has_tls'] = False
+            self.result['https']['redirect'] = False
             return
 
         details = {}
@@ -42,6 +43,6 @@ class TLSDetailsExtractor(Extractor):
         https_redirect = None
         if self.result['site_url'].startswith('http://'):
             https_redirect = self.result['final_url'].startswith('https://')
-        self.result['tls']['has_tls'] = True
-        self.result['tls']['https_redirect'] = https_redirect
-        self.result['tls'].update(details)
+        self.result['https']['has_tls'] = True
+        self.result['https']['redirect'] = https_redirect
+        self.result['https'].update(details)
