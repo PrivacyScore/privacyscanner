@@ -1,3 +1,5 @@
+import re
+
 import dns.resolver
 
 from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
@@ -49,8 +51,11 @@ class FailedRequestsExtractor(Extractor):
                         dns.resolver.NoAnswer):
                     domain_registered = False
                 extra = {'domain_registered': domain_registered}
-            elif 'net::ERR_UNKNOWN_URL_SCHEME' in error_text:
-                error_type = 'unknown-url-scheme'
+            elif 'net::ERR_' in error_text:
+                error_type = 'unknown'
+                match = re.search('net::ERR_([^\s])+', error_text)
+                if match:
+                    error_type = match.group(1).replace('_', '-').lower()
             else:
                 error_type = 'unknown'
             error = {
