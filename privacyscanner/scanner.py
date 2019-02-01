@@ -268,7 +268,7 @@ def main():
     if args.command is None:
         parser.error('No arguments')
     if args.command == 'scan' and args.skip_dependencies and not args.scan_modules:
-        parser.error('--skip-dependencies can only be set when using --scans')
+        parser.error('--skip-dependencies can only be set when using --scan-modules')
     try:
         args.func(args)
     except CommandError as e:
