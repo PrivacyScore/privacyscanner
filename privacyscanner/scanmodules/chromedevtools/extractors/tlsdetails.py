@@ -6,7 +6,7 @@ class TLSDetailsExtractor(Extractor):
     def extract_information(self):
         self.result['tls'] = {'has_tls': None}
 
-        response = self.page.get_response_by_url(self.result['final_url'])
+        response = self.page.final_response
         if response is None:
             self.logger.error('Could not get response for final_url')
             return

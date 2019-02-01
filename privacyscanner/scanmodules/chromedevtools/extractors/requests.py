@@ -8,7 +8,7 @@ class RequestsExtractor(Extractor):
         for request in self.page.request_log:
             if request['url'].startswith('data:'):
                 continue
-            response = self.page.get_response_by_url(request['url'])
+            response = self.page.get_final_response_by_id(request['requestId'])
             request_dict = {
                 'url': request['url'],
                 'sets_cookie': self._get_sets_cookie(response),

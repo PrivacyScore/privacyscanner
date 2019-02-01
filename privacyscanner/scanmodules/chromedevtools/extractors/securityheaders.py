@@ -3,7 +3,7 @@ from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
 
 class SecurityHeadersExtractor(Extractor):
     def extract_information(self):
-        response = self.page.get_response_by_url(self.result['final_url'])
+        response = self.page.final_response
         if response is None:
             self.logger.error('Could not find response for final url')
             return

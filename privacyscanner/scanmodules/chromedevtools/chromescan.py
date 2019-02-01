@@ -5,6 +5,7 @@ import subprocess
 import tempfile
 import time
 import warnings
+from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
@@ -447,14 +448,27 @@ class Page:
         self.security_state_log = []
         self.scan_start = None
         self.tab = tab
-        self._response_lookup = {}
+        self._response_lookup = defaultdict(list)
 
     def add_request(self, request):
+        print('REQUEST', request['requestId'])
         self.request_log.append(request)
 
     def add_response(self, response):
+        print('RESPONSE', response['requestId'])
         self.response_log.append(response)
-        self._response_lookup[response['url']] = response
+        self._response_lookup[response['requestId']].append(response)
 
-    def get_response_by_url(self, url):
-        return self._response_lookup.get(url)
+    def get_final_response_by_id(self, request_id):
+        return self.get_response_chain_by_id(request_id)[-1]
+
+    def get_response_chain_by_id(self, request_id):
+        print('LOOKING FOR', request_id)
+        if request_id not in self._response_lookup:
+            raise KeyError('No response for this request id.')
+        return self._response_lookup[request_id]
+
+    @property
+    def final_response(self):
+        request_id = self.request_log[0]['requestId']
+        return self.get_final_response_by_id(request_id)
