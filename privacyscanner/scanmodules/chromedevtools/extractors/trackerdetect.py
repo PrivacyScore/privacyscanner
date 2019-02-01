@@ -9,7 +9,7 @@ from privacyscanner.utils import download_file
 
 EASYLIST_DOWNLOAD_PREFIX = 'https://easylist.to/easylist/'
 EASYLIST_FILES = ['easylist.txt', 'easyprivacy.txt', 'fanboy-annoyance.txt']
-EASYLIST_PATH = Path('~/.local/share/privacyscanner/easylist').expanduser()
+EASYLIST_PATH = Path('easylist')
 
 _adblock_rules_cache = None
 
@@ -72,16 +72,18 @@ class TrackerDetectExtractor(Extractor):
             self.rules = _adblock_rules_cache
             return
 
-        easylist_files = [EASYLIST_PATH / filename for filename in EASYLIST_FILES]
+        easylist_path = self.options['storage_path'] / EASYLIST_PATH
+        easylist_files = [easylist_path / filename for filename in EASYLIST_FILES]
         self.rules = AdblockRules(rule_files=easylist_files,
-                                  cache_file=EASYLIST_PATH / 'rules.cache',
+                                  cache_file=easylist_path / 'rules.cache',
                                   skip_parsing_errors=True)
         _adblock_rules_cache = self.rules
 
     @staticmethod
     def update_dependencies(options):
-        EASYLIST_PATH.mkdir(parents=True, exist_ok=True)
+        easylist_path = options['storage_path'] / EASYLIST_PATH
+        easylist_path.mkdir(parents=True, exist_ok=True)
         for filename in EASYLIST_FILES:
             download_url = EASYLIST_DOWNLOAD_PREFIX + filename
-            target_file = (EASYLIST_PATH / filename).open('wb')
+            target_file = (easylist_path / filename).open('wb')
             download_file(download_url, target_file)
