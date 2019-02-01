@@ -222,7 +222,11 @@ class PageScanner:
         self._page = Page(self._tab)
         for extractor_class in self._extractor_classes:
             self._extractors.append(extractor_class(self._page, result, logger, options))
-        self._register_javascript()
+
+        javascript_enabled = not options['disable_javascript']
+
+        if javascript_enabled:
+            self._register_javascript()
 
         if self._is_headless():
             self._tab.Emulation.setDeviceMetricsOverride(
@@ -246,15 +250,16 @@ class PageScanner:
         self._tab.Page.addScriptToEvaluateOnNewDocument(source=source)
         self._tab.Page.enable()
 
-        self._tab.Debugger.scriptParsed = self._cb_script_parsed
-        self._tab.Debugger.scriptFailedToParse = self._cb_script_failed_to_parse
-        self._tab.Debugger.paused = self._cb_paused
-        self._tab.Debugger.resumed = self._cb_resumed
-        self._tab.Debugger.enable()
-        # Pause the JavaScript before we navigate to the page. This
-        # gives us some time to setup the debugger before any JavaScript
-        # runs.
-        self._tab.Debugger.pause()
+        if javascript_enabled:
+            self._tab.Debugger.scriptParsed = self._cb_script_parsed
+            self._tab.Debugger.scriptFailedToParse = self._cb_script_failed_to_parse
+            self._tab.Debugger.paused = self._cb_paused
+            self._tab.Debugger.resumed = self._cb_resumed
+            self._tab.Debugger.enable()
+            # Pause the JavaScript before we navigate to the page. This
+            # gives us some time to setup the debugger before any JavaScript
+            # runs.
+            self._tab.Debugger.pause()
 
         self._page.scan_start = datetime.utcnow()
         self._tab.Page.navigate(url=result['site_url'], _timeout=30)
@@ -274,7 +279,8 @@ class PageScanner:
             self._page_interaction()
             self._tab.wait(5)
         self._tab.Page.disable()
-        self._tab.Debugger.disable()
+        if javascript_enabled:
+            self._tab.Debugger.disable()
         self._unregister_network_callbacks()
         self._unregister_security_callbacks()
         result['reachable'] = has_responses

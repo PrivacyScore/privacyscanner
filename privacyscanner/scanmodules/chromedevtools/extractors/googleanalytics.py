@@ -49,15 +49,19 @@ TRACKER_JS = """
 class GoogleAnalyticsExtractor(Extractor):
     def extract_information(self):
         ga = {
-            'has_ga_object': False,
-            'has_gat_object': False,
+            'has_ga_object': None,
+            'has_gat_object': None,
             'trackers': []
         }
-        try:
-            info = javascript_evaluate(self.page.tab, TRACKER_JS)
-            ga.update(info)
-        except JavaScriptError:
-            pass
+
+        if not self.options['disable_javascript']:
+            ga['has_gat_object'] = False
+            ga['has_gat_object'] = False
+            try:
+                info = javascript_evaluate(self.page.tab, TRACKER_JS)
+                ga.update(info)
+            except JavaScriptError:
+                pass
         num_requests_aip = 0
         num_requests_no_aip = 0
         has_ga_requests = False

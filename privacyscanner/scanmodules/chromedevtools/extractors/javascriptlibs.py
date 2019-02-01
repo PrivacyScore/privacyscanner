@@ -15,6 +15,8 @@ LIBRARY_JS = """
 
 class JavaScriptLibsExtractor(Extractor):
     def extract_information(self):
+        if self.options['disable_javascript']:
+            return
         versions = {
             'jQuery': None,
             'React': None,

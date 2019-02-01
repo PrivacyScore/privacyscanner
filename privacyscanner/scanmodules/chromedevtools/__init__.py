@@ -8,7 +8,7 @@ from privacyscanner.scanmodules.chromedevtools.extractors import FinalUrlExtract
     FailedRequestsExtractor, SecurityHeadersExtractor, TrackerDetectExtractor, \
     CookieStatsExtractor, JavaScriptLibsExtractor, ScreenshotExtractor, ImprintExtractor
 from privacyscanner.scanmodules.chromedevtools.utils import TLDEXTRACT_CACHE_FILE, parse_domain
-from privacyscanner.utils import file_is_outdated
+from privacyscanner.utils import file_is_outdated, set_default_options
 
 
 EXTRACTOR_CLASSES = [FinalUrlExtractor, RedirectChainExtractor, GoogleAnalyticsExtractor,
@@ -25,6 +25,9 @@ class ChromeDevtoolsScanModule(ScanModule):
     required_keys = ['site_url']
 
     def __init__(self, options):
+        set_default_options(options, {
+            'disable_javascript': False
+        })
         super().__init__(options)
         cache_file = self.options['storage_path'] / TLDEXTRACT_CACHE_FILE
         parse_domain.cache_file = str(cache_file)
