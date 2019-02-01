@@ -228,6 +228,9 @@ class PageScanner:
         if javascript_enabled:
             self._register_javascript()
 
+        if not javascript_enabled:
+            self._tab.Emulation.setScriptExecutionDisabled(value=True)
+
         if self._is_headless():
             self._tab.Emulation.setDeviceMetricsOverride(
                 width=1920, height=1080, screenWidth=1920, screenHeight=1080,
