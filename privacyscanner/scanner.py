@@ -217,7 +217,8 @@ def update_dependencies(args):
 
 def print_master_config(args):
     config = load_config(args.config)
-    scan_modules = load_modules(config['SCAN_MODULES'])
+    scan_modules = load_modules(config['SCAN_MODULES'],
+                                config['SCAN_MODULE_OPTIONS'])
     dependencies = {}
     for scan_module in scan_modules.values():
         dependencies[scan_module.name] = set(scan_module.dependencies)
