@@ -30,6 +30,13 @@ def load_modules(module_list, module_options):
                 raise ModuleLoadError('Module {} has no attribute `{}`.'.format(
                     module_class, attr_name
                 ))
+        # Copy options which are for all scan modules to each individual
+        # scan module if they are not set, i.e., you can override them
+        # for an individual scan module.
         options = module_options.get(class_obj.name, {})
-        scan_modules[class_obj.name] = class_obj(options.get(class_obj.name, {}))
+        for key, value in module_options['__all__'].items():
+            if key not in options:
+                options[key] = value
+
+        scan_modules[class_obj.name] = class_obj(options)
     return scan_modules

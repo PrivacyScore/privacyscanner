@@ -52,11 +52,15 @@ def load_config(config_file):
         with config_file.open() as f:
             code = compile(f.read(), config_file.name, 'exec')
             exec(code, {}, config)
-            return config
     except IOError as e:
         raise CommandError('Could not open config: {}'.format(e)) from e
     except Exception as e:
         raise CommandError('Could not parse config: {}: {}'.format(e.__class__.__name__, e)) from e
+
+    if '__all__' not in config['SCAN_MODULE_OPTIONS']:
+        config['SCAN_MODULE_OPTIONS']['__all__'] = {}
+
+    return config
 
 
 def slugify(somestr):
