@@ -24,6 +24,8 @@ from privacyscanner.scanmodules import load_modules
 from privacyscanner import defaultconfig
 from privacyscanner.loghandlers import ScanFileHandler, ScanStreamHandler
 from privacyscanner.exceptions import RescheduleLater, RetryScan
+from privacyscanner.utils import NumericLock
+
 
 CONFIG_LOCATIONS = [
     Path('~/.config/privacyscanner/config.py').expanduser(),
@@ -151,6 +153,8 @@ def scan_site(args):
     stream_handler = ScanStreamHandler()
     logs_dir = results_dir / 'logs'
     logs_dir.mkdir(exist_ok=True)
+    lock_dir = config['STORAGE_PATH'] / 'locks'
+    lock_dir.mkdir(exist_ok=True)
     scan_queue = [QueueEntry(mod_name, 0, None) for mod_name in scan_module_names]
     scan_queue.reverse()
     while scan_queue:
@@ -166,13 +170,14 @@ def scan_site(args):
         logger = logging.Logger(mod.name)
         logger.addHandler(stream_handler)
         logger.addHandler(file_handler)
-        scan_meta = ScanMeta(worker_id=0, num_tries=num_try)
         with tempfile.TemporaryDirectory() as temp_dir:
             old_cwd = os.getcwd()
             os.chdir(temp_dir)
             logger.info('Starting %s', mod.name)
             try:
-                mod.scan_site(result, logger, scan_meta)
+                with NumericLock(lock_dir) as worker_id:
+                    scan_meta = ScanMeta(worker_id=worker_id, num_tries=num_try)
+                    mod.scan_site(result, logger, scan_meta)
             except RetryScan:
                 if num_try <= config['MAX_TRIES']:
                     scan_queue.append(QueueEntry(scan_module_name, num_try, not_before))
