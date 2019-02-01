@@ -8,3 +8,4 @@ NUM_WORKERS = 2
 MAX_EXECUTIONS = 100
 RAVEN_DSN = None
 MAX_TRIES = 3
+STORAGE_PATH = '~/.local/share/privacyscanner'

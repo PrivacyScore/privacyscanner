@@ -57,14 +57,12 @@ def load_config(config_file):
     except Exception as e:
         raise CommandError('Could not parse config: {}: {}'.format(e.__class__.__name__, e)) from e
 
+    config['STORAGE_PATH'] = Path(config['STORAGE_PATH']).expanduser()
+
     # Make sure that all scan modules know the path where dependencies
     # are stored. Use the default path if not configured.
     all_options = config['SCAN_MODULE_OPTIONS'].setdefault('__all__', {})
-    if 'storage_path' not in all_options:
-        storage_path = Path('~/.local/share/privacyscanner').expanduser()
-    else:
-        storage_path = Path(all_options['storage_path'])
-    all_options['storage_path'] = storage_path
+    all_options['storage_path'] = config['STORAGE_PATH']
 
     return config
 
