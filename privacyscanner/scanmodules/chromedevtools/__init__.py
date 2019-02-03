@@ -45,7 +45,7 @@ class ChromeDevtoolsScanModule(ScanModule):
             return
         result['https']['same_content'] = None
         result['https']['same_content_score'] = None
-        if result['site_url'].startswith('http://') and not result['https']['redirect']:
+        if result['site_url'].startswith('http://') and not result['https']['redirects_secure']:
             # Lets do another scan with https but with limited extractors.
             # We use this to annotate the http result with TLS details and
             # insecure content details if there is not redirect to https
@@ -61,7 +61,7 @@ class ChromeDevtoolsScanModule(ScanModule):
             if same_content:
                 result['insecure_content'] = extra_result['insecure_content']
                 result['https'] = extra_result['https']
-                result['https']['redirect'] = False
+                result['https']['redirects_secure'] = False
             result['https']['same_content_score'] = similarity
             result['https']['same_content'] = same_content
 

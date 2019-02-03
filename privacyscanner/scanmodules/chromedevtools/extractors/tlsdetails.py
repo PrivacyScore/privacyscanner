@@ -4,16 +4,33 @@ from privacyscanner.scanmodules.chromedevtools.utils import camelcase_to_undersc
 
 class TLSDetailsExtractor(Extractor):
     def extract_information(self):
-        self.result['https'] = {'has_tls': None, 'redirect': None}
+        redirects_secure = None
+        redirects_insecure = None
+        if self.result['site_url'].startswith('http://'):
+            redirects_secure = self.result['final_url'].startswith('https://')
+            if redirects_secure:
+                redirects_insecure = False
+        if self.result['site_url'].startswith('https://'):
+            redirects_insecure = self.result['final_url'].startswith('http://')
+            if redirects_insecure:
+                redirects_secure = False
 
-        response = self.page.final_response
+        self.result['https'] = {
+            'has_tls': None,
+            'redirects_secure': redirects_secure,
+            'redirects_insecure': redirects_insecure
+        }
+
+        if redirects_insecure:
+            response = self.page.response_log[0]
+        else:
+            response = self.page.final_response
         if response is None:
             self.logger.error('Could not get response for final_url')
             return
 
         if 'securityDetails' not in response:
             self.result['https']['has_tls'] = False
-            self.result['https']['redirect'] = False
             return
 
         details = {}
@@ -40,9 +57,5 @@ class TLSDetailsExtractor(Extractor):
                 continue
             details[camelcase_to_underscore(key)] = value
 
-        https_redirect = None
-        if self.result['site_url'].startswith('http://'):
-            https_redirect = self.result['final_url'].startswith('https://')
         self.result['https']['has_tls'] = True
-        self.result['https']['redirect'] = https_redirect
         self.result['https'].update(details)
