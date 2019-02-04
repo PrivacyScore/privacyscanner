@@ -27,8 +27,8 @@ class NetworkScanModule(ScanModule):
     dependencies = []
     required_keys = ['site_url']
 
-    def scan_site(self, result, logger, meta):
-        scan_site(result, logger, self.options, meta)
+    def scan_site(self, result, meta):
+        scan_site(result, self.logger, self.options, meta)
 
 
 # The minimum Jaccard coefficient required for the

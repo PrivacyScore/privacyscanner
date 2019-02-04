@@ -314,7 +314,8 @@ class Worker:
                 old_cwd = os.getcwd()
                 os.chdir(temp_dir)
                 try:
-                    job.scan_module.scan_site(result, logger, scan_meta)
+                    job.scan_module.logger = logger
+                    job.scan_module.scan_site(result, scan_meta)
                 except RetryScan:
                     self._job_queue.report_failure()
                     self._notify_master('job_failed', (datetime.today(),))

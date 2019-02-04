@@ -8,7 +8,7 @@ class ExampleScanModule(ScanModule):
     dependencies = []
     required_keys = ['site_url']
 
-    def scan_site(self, result, logger, meta):
+    def scan_site(self, result, meta):
         """Scans a site and adds more information to the result.
 
         The parameter result behaves like a dictionary, you can set keys on it
@@ -32,7 +32,7 @@ class ExampleScanModule(ScanModule):
         The parameter options is a dictionary with the configuration of the scan
         module as specified in the configuration file at SCAN_MODULE_OPTIONS.
         """
-        logger.info('we will check the site for https')
+        self.logger.info('we will check the site for https')
         parsed_site = urlparse(result['site_url'])
         result['is_https'] = parsed_site.scheme == 'https'
         # result.add_file('screenshot.png')

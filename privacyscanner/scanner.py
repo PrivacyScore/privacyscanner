@@ -177,7 +177,8 @@ def scan_site(args):
             try:
                 with NumericLock(lock_dir) as worker_id:
                     scan_meta = ScanMeta(worker_id=worker_id, num_tries=num_try)
-                    mod.scan_site(result, logger, scan_meta)
+                    mod.logger = logger
+                    mod.scan_site(result, scan_meta)
             except RetryScan:
                 if num_try <= config['MAX_TRIES']:
                     scan_queue.append(QueueEntry(scan_module_name, num_try, not_before))
@@ -207,15 +208,18 @@ def update_dependencies(args):
     scan_modules = load_modules(config['SCAN_MODULES'],
                                 config['SCAN_MODULE_OPTIONS'])
     updated = []
+    stream_handler = ScanStreamHandler()
     for scan_module in scan_modules.values():
-        print(scan_module.name)
+        logger = logging.Logger(scan_module.name)
+        logger.addHandler(stream_handler)
         if hasattr(scan_module, 'update_dependencies'):
+            logger.info('Updating dependencies')
             scan_module.update_dependencies()
             updated.append(scan_module.name)
     if updated:
-        print(' '.join(updated))
+        print('\nUpdated dependencies of: ' + ' '.join(updated))
     else:
-        print('Nothing to update.')
+        print('\nNothing to update.')
 
 
 def print_master_config(args):

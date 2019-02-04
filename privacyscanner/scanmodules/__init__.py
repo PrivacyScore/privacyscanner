@@ -1,4 +1,6 @@
 import importlib
+import logging
+from typing import Any, Dict, List
 
 
 class ModuleLoadError(Exception):
@@ -6,10 +8,17 @@ class ModuleLoadError(Exception):
 
 
 class ScanModule:
+    name: str
+    dependencies: List[str]
+    required_keys: List[str]
+    logger: logging.Logger
+    options: Dict[str, Any]
+
     def __init__(self, options):
         self.options = options
+        self.logger = logging.Logger(self.name)
 
-    def scan_site(self, result, logger, meta):
+    def scan_site(self, result, meta):
         raise NotImplemented
 
     def update_dependencies(self):

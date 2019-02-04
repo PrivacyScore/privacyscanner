@@ -37,10 +37,10 @@ class ChromeDevtoolsScanModule(ScanModule):
         cache_file = self.options['storage_path'] / TLDEXTRACT_CACHE_FILE
         parse_domain.cache_file = str(cache_file)
 
-    def scan_site(self, result, logger, meta):
+    def scan_site(self, result, meta):
         chrome_scan = ChromeScan(EXTRACTOR_CLASSES)
         debugging_port = self.options.get('start_port', 9222) + meta.worker_id
-        content = chrome_scan.scan(result, logger, self.options, meta, debugging_port)
+        content = chrome_scan.scan(result, self.logger, self.options, meta, debugging_port)
         if not result['reachable']:
             return
         result['https']['same_content'] = None
@@ -52,7 +52,7 @@ class ChromeDevtoolsScanModule(ScanModule):
             site_url = 'https://' + result['site_url'][len('http://'):]
             extra_result = {'site_url': site_url}
             chrome_scan = ChromeScan(EXTRACTOR_CLASSES_HTTPS_RUN)
-            https_content = chrome_scan.scan(extra_result, logger, self.options, meta,
+            https_content = chrome_scan.scan(extra_result, self.logger, self.options, meta,
                                              debugging_port)
             if not extra_result['reachable']:
                 return

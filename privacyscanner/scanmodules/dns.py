@@ -37,7 +37,7 @@ class DNSScanModule(ScanModule):
         self.options['geoip_database_path'] = geoip_path
         self._geoip_reader = None
 
-    def scan_site(self, result, logger, meta):
+    def scan_site(self, result, meta):
         dns = {}
         for url in result['redirect_chain']:
             p = parse_domain(url)
