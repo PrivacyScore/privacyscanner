@@ -75,7 +75,9 @@ class DNSScanModule(ScanModule):
             answer = resolver.query(qname, rdtype)
         except resolver.NXDOMAIN:
             return []
-        except DNSException:
+        except DNSException as e:
+            self.logger.exception('Could not get %(rdtype) records for %(qname)s: %(msg)s',
+                                  {'qname': qname, 'rdtype': rdtype, 'msg': str(e)})
             return None
         entries = []
         for a in answer:
@@ -101,6 +103,7 @@ class DNSScanModule(ScanModule):
             answer = resolver.query(qname, 'PTR')
         except resolver.NXDOMAIN:
             return []
-        except DNSException:
+        except DNSException as e:
+            self.logger.exception('Could not get PTR records for %s: %s', address, str(e))
             return None
         return [a.target.to_text()[:-1] for a in answer]
