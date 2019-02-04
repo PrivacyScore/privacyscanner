@@ -128,7 +128,7 @@ def scan_site(args):
         raise CommandError('Could not write result JSON: {}'.format(e)) from e
 
     scan_modules = load_modules(config['SCAN_MODULES'],
-                                       config['SCAN_MODULE_OPTIONS'])
+                                config['SCAN_MODULE_OPTIONS'])
     scan_module_names = args.scan_modules
 
     if scan_module_names is None:
