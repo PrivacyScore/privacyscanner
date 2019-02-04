@@ -88,7 +88,7 @@ class DNSScanModule(ScanModule):
         reader = self._get_geoip_reader()
         try:
             answer = resolver.query(qname, rdtype)
-        except resolver.NXDOMAIN:
+        except (resolver.NXDOMAIN, resolver.NoAnswer):
             return []
         except DNSException as e:
             self.logger.exception('Could not get %(rdtype) records for %(qname)s: %(msg)s',
@@ -116,7 +116,7 @@ class DNSScanModule(ScanModule):
         qname = reversename.from_address(address)
         try:
             answer = resolver.query(qname, 'PTR')
-        except resolver.NXDOMAIN:
+        except (resolver.NXDOMAIN, resolver.NoAnswer):
             return []
         except DNSException as e:
             self.logger.exception('Could not get PTR records for %s: %s', address, str(e))
