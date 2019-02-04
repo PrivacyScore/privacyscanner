@@ -39,13 +39,28 @@ class DNSScanModule(ScanModule):
 
     def scan_site(self, result, meta):
         dns = {}
-        for url in result['redirect_chain']:
+
+        # Fetch MX records
+        p = parse_domain(result['site_url'])
+        mail_domain = p.fqdn[len('www.'):] if p.fqdn.startswith('www.') else p.fqdn
+        mx_records = self._get_mx_records(mail_domain)
+
+        # Create a list for which we fetch A/AAAA records
+        domain_list = {mail_domain}
+        domain_list.update(parse_domain(url).fqdn for url in result['redirect_chain'])
+        if mx_records is not None:
+            domain_list.update(record['host'] for record in mx_records)
+
+        # Fetch A/AAAA records and reverse (PTR)
+        for url in domain_list:
             p = parse_domain(url)
-            if p.fqdn in dns:
-                continue
             records = dns.setdefault(p.fqdn, {})
             records['A'] = self._get_dns_records(p.fqdn, 'A')
             records['AAAA'] = self._get_dns_records(p.fqdn, 'AAAA')
+
+        dns.setdefault(mail_domain, {})['MX'] = mx_records
+
+        result['mail'] = {'domain': mail_domain}
         result['dns'] = dns
 
     def update_dependencies(self):
@@ -107,3 +122,19 @@ class DNSScanModule(ScanModule):
             self.logger.exception('Could not get PTR records for %s: %s', address, str(e))
             return None
         return [a.target.to_text()[:-1] for a in answer]
+
+    def _get_mx_records(self, mail_domain):
+        try:
+            answer = resolver.query(mail_domain, 'MX')
+        except (resolver.NXDOMAIN, resolver.NoAnswer):
+            return []
+        except DNSException as e:
+            self.logger.exception('Could not get MX records for %s: %s', mail_domain, str(e))
+            return None
+        mx_records = [{
+            'priority': a.preference,
+            'host': a.exchange.to_text()[:-1]
+        } for a in answer]
+        # We include the name in the ordering to have a deterministic order
+        mx_records.sort(key=lambda rec: (rec['priority'], rec['host']))
+        return mx_records
