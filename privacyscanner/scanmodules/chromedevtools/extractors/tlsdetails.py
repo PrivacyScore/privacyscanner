@@ -56,6 +56,8 @@ class TLSDetailsExtractor(Extractor):
             if key not in properties:
                 continue
             details[camelcase_to_underscore(key)] = value
+        if 'mac' not in details:
+            details['mac'] = None
 
         self.result['https']['has_tls'] = True
         self.result['https'].update(details)
