@@ -1,5 +1,6 @@
 from binascii import hexlify
 from datetime import datetime
+import ssl
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -36,3 +37,48 @@ def get_certificate_info(cert_der):
         'is_expired': datetime.now() > cert.not_valid_after
     }
     # TODO: Add extensions
+
+
+def get_cipher_info(cipher_tuple):
+    cipher_string, protocol, bits = cipher_tuple
+    context = ssl.create_default_context()
+    ciphers_lookup = {cipher['name']: cipher for cipher in context.get_ciphers()}
+    return _build_cipher_info(ciphers_lookup[cipher_string], protocol)
+
+
+def _build_cipher_info(cipher_info, protocol):
+    if 'symmetric' not in cipher_info:
+        raise RuntimeError('OpenSSL 1.1 is required. Even Debian 9 has it.')
+    cipher = cipher_info['symmetric'].replace('-', '_').upper()
+    params = _parse_openssl_description(cipher_info['description'])
+    print(params)
+    key_exchange = None
+    if 'Kx' in params:
+        key_exchange = params['Kx']
+    if 'Au':
+        key_exchange += '_' + params['Au']
+    # Unfortunately, OpenSSL does not provide any information about the group.
+    key_exchange_group = None
+    mac = None
+    if 'mac' in params:
+        # AHEAD ciphers do not have a MAC
+        mac = params['mac'] if params['mac'] != 'AHEAD' else None
+    return {
+        'cipher': cipher,
+        'key_exchange': key_exchange,
+        'key_exchange_group': None,
+        'mac': mac,
+        'protocol': protocol.replace('TLSv', 'TLS '),
+    }
+
+
+def _parse_openssl_description(description):
+    parts = description.split()
+    result = {}
+    for part in parts:
+        if '=' in part:
+            key, value = part.split('=', 1)
+            result[key] = value
+    result['name'] = parts[0]
+    result['protocol'] = parts[1]
+    return result
