@@ -1,10 +1,14 @@
+import ssl
 from collections import namedtuple
 import smtplib
+from pathlib import Path
 
 from privacyscanner.scanmodules import ScanModule
 from privacyscanner.utils import set_default_options
 from privacyscanner.utils.tls import get_cipher_info, get_certificate_info
 
+
+LINUX_CA_FILE = Path('/etc/ssl/certs/ca-certificates.crt')
 
 MailserverResult = namedtuple('MailserverResult',
                               ['banner', 'cipher', 'certificate', 'features',
@@ -16,9 +20,14 @@ class MailScanModule(ScanModule):
     dependencies = ['dns']
 
     def __init__(self, options):
+        ca_file = None
+        if LINUX_CA_FILE.exists():
+            ca_file = str(LINUX_CA_FILE)
         set_default_options(options, {
             'local_hostname': None,
-            'timeout': 10
+            'timeout': 10,
+            'ca_file': ca_file,
+            'ca_path': None
         })
         super().__init__(options)
 
@@ -31,6 +40,11 @@ class MailScanModule(ScanModule):
             # We have either an error when receiving MX records
             # or have no MX records.
             mail_host = mail['domain']
+
+        has_cas = (self.options['ca_file'] is not None or
+                   self.options['ca_path'] is not None)
+        if not has_cas:
+            self.logger.warning('No CA certificates loaded. Cannot check for trust.')
 
         conn = smtplib.SMTP(local_hostname=self.options['local_hostname'],
                             timeout=self.options['timeout'])
@@ -50,10 +64,26 @@ class MailScanModule(ScanModule):
             has_starttls = conn.has_extn('STARTTLS')
             mail['has_starttls'] = has_starttls
             if has_starttls:
-                conn.starttls()
+                context = ssl.create_default_context(
+                    cafile=self.options['ca_file'],
+                    capath=self.options['ca_path']
+                )
+                context.check_hostname = has_cas
+                context.verify_mode = ssl.CERT_REQUIRED if has_cas else ssl.CERT_NONE
+                try:
+                    conn.starttls(context=context)
+                    is_trusted = True if has_cas else None
+                except ssl.CertificateError:
+                    is_trusted = False
+                    context.check_hostname = False
+                    context.verify_mode = ssl.CERT_NONE
+                    conn.connect(mail_host)
+                    conn.starttls(context=context)
+
                 mail.update(get_cipher_info(conn.sock.cipher()))
                 cert_der = conn.sock.getpeercert(binary_form=True)
                 mail['certificate'] = get_certificate_info(cert_der)
+                mail['certificate']['is_trusted'] = is_trusted
             mail['feature'] = conn.esmtp_features
         except smtplib.SMTPHeloError:
             mail['error'] = 'EHLO'
