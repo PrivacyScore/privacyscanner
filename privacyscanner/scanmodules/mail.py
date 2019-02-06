@@ -84,7 +84,6 @@ class MailScanModule(ScanModule):
                 cert_der = conn.sock.getpeercert(binary_form=True)
                 mail['certificate'] = get_certificate_info(cert_der)
                 mail['certificate']['is_trusted'] = is_trusted
-            mail['feature'] = conn.esmtp_features
         except smtplib.SMTPHeloError:
             mail['error'] = 'EHLO'
         except smtplib.SMTPException:
