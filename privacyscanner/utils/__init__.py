@@ -2,6 +2,7 @@ import os
 import errno
 import fcntl
 import time
+from base64 import b32encode
 from urllib.request import Request, urlopen
 
 
@@ -64,3 +65,8 @@ def set_default_options(target, defaults):
                 set_default_options(new_target, value)
         else:
             target[key] = value
+
+
+def rand_str(length):
+    rand_bits = os.urandom((length * 5 // 8) + 1)
+    return b32encode(rand_bits).decode()[:length].lower()
