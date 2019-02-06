@@ -1,4 +1,3 @@
-import re
 from pathlib import Path
 
 from privacyscanner.scanmodules import ScanModule
@@ -9,7 +8,7 @@ from privacyscanner.scanmodules.chromedevtools.extractors import FinalUrlExtract
     FailedRequestsExtractor, SecurityHeadersExtractor, TrackerDetectExtractor, \
     CookieStatsExtractor, JavaScriptLibsExtractor, ScreenshotExtractor, ImprintExtractor
 from privacyscanner.scanmodules.chromedevtools.utils import TLDEXTRACT_CACHE_FILE, parse_domain
-from privacyscanner.utils import file_is_outdated, set_default_options
+from privacyscanner.utils import file_is_outdated, set_default_options, calculate_jaccard_index
 
 
 EXTRACTOR_CLASSES = [FinalUrlExtractor, RedirectChainExtractor, GoogleAnalyticsExtractor,
@@ -56,7 +55,7 @@ class ChromeDevtoolsScanModule(ScanModule):
                                              debugging_port)
             if not extra_result['reachable']:
                 return
-            similarity = _calculate_jaccard_index(content, https_content)
+            similarity = calculate_jaccard_index(content, https_content)
             same_content = similarity >= self.options['https_same_content_threshold']
             if same_content:
                 result['insecure_content'] = extra_result['insecure_content']
@@ -74,15 +73,3 @@ class ChromeDevtoolsScanModule(ScanModule):
         for extractor_class in EXTRACTOR_CLASSES:
             if hasattr(extractor_class, 'update_dependencies'):
                 extractor_class.update_dependencies(self.options)
-
-
-def _calculate_jaccard_index(a: bytes, b: bytes) -> float:
-    """Calculate the jaccard similarity of a and b."""
-    pattern = re.compile(rb'[ \n]')
-    # remove tokens containing / to prevent wrong classifications for
-    # absolute paths
-    a = {token for token in pattern.split(a) if b'/' not in token}
-    b = {token for token in pattern.split(b) if b'/' not in token}
-    intersection = a.intersection(b)
-    union = a.union(b)
-    return len(intersection) / len(union)
