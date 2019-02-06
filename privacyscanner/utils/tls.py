@@ -51,7 +51,6 @@ def _build_cipher_info(cipher_info, protocol):
         raise RuntimeError('OpenSSL 1.1 is required. Even Debian 9 has it.')
     cipher = cipher_info['symmetric'].replace('-', '_').upper()
     params = _parse_openssl_description(cipher_info['description'])
-    print(params)
     key_exchange = None
     if 'Kx' in params:
         key_exchange = params['Kx']
