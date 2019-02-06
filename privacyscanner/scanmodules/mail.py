@@ -84,6 +84,10 @@ class MailScanModule(ScanModule):
                 cert_der = conn.sock.getpeercert(binary_form=True)
                 mail['certificate'] = get_certificate_info(cert_der)
                 mail['certificate']['is_trusted'] = is_trusted
+            code, msg = conn.verify('root')
+            mail['allows_vrfy'] = code in (250, 251, 252, 550, 551, 553)
+            code, msg = conn.expn('admin')
+            mail['allows_expn'] = code in (250, 550)
         except smtplib.SMTPHeloError:
             mail['error'] = 'EHLO'
         except smtplib.SMTPException:
