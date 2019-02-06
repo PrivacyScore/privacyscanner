@@ -79,6 +79,7 @@ class MailScanModule(ScanModule):
                     context.verify_mode = ssl.CERT_NONE
                     conn.connect(mail_host)
                     conn.starttls(context=context)
+                conn.ehlo_or_helo_if_needed()
 
                 mail.update(get_cipher_info(conn.sock.cipher()))
                 cert_der = conn.sock.getpeercert(binary_form=True)
