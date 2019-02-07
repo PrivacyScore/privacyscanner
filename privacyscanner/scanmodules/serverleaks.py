@@ -14,7 +14,7 @@ from privacyscanner.scanmodules import ScanModule
 
 class ServerleaksScanModule(ScanModule):
     name = 'serverleak'
-    dependencies = ['network']
+    dependencies = ['chromedevtools']
     required_keys = ['final_url']
 
     def scan_site(self, result, meta):
