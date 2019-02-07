@@ -1,3 +1,4 @@
+import hashlib
 import os
 import errno
 import fcntl
@@ -8,6 +9,10 @@ from urllib.request import Request, urlopen
 
 
 FAKE_UA = 'Mozilla/5.0 (X11; Linux x86_64; rv:61.0) Gecko/20100101 Firefox/61.0'
+
+
+class DownloadVerificationFailed(Exception):
+    pass
 
 
 class NumericLock:
@@ -35,20 +40,26 @@ class NumericLock:
         os.unlink(self._lock_file.name)
 
 
-def download_file(url, fileobj):
+def download_file(url, fileobj, verify_hash=None):
     request = Request(url)
     request.add_header('User-Agent', FAKE_UA)
     response = urlopen(request)
-    copy_to(response, fileobj)
+    hasher = hashlib.sha256() if verify_hash else None
+    copy_to(response, fileobj, hasher)
     fileobj.flush()
+    if verify_hash and hasher.hexdigest() != verify_hash:
+        msg = 'SHA256({!r}) does not match {}.'.format(url, verify_hash)
+        raise DownloadVerificationFailed(msg)
 
 
-def copy_to(src, dest):
+def copy_to(src, dest, hasher=None):
     while True:
         data = src.read(8192)
         if not data:
             break
         dest.write(data)
+        if hasher:
+            hasher.update(data)
 
 
 def file_is_outdated(path, max_age):
