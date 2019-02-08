@@ -11,6 +11,22 @@ class JavaScriptError(Exception):
     pass
 
 
+class scripts_disabled:
+    def __init__(self, tab, options):
+        self._tab = tab
+        self._options = options
+
+    def __enter__(self):
+        # On pages that already have javascript disabled, do nothing.
+        if not self._options['disable_javascript']:
+            self._tab.Emulation.setScriptExecutionDisabled(value=True)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # On pages that already have javascript disabled, do nothing.
+        if not self._options['disable_javascript']:
+            self._tab.Emulation.setScriptExecutionDisabled(value=False)
+
+
 def camelcase_to_underscore(text):
     return re.sub('[A-Z]', lambda m: '_' + m.group(0).lower(), text)
 

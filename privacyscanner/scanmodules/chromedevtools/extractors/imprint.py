@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 import pychrome
 
 from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
+from privacyscanner.scanmodules.chromedevtools.utils import scripts_disabled
 
 
 ELEMENT_NODE = 1
@@ -13,6 +14,11 @@ class ImprintExtractor(Extractor):
     IMPRINT_KEYWORDS = ['imprint', 'impressum', 'contact', 'kontakt', 'about us', 'über uns']
 
     def extract_information(self):
+        # Disable scripts to avoid DOM changes while searching for the imprint.
+        with scripts_disabled(self.page.tab, self.options):
+            self._extract_imprint()
+
+    def _extract_imprint(self):
         node_id = self.page.tab.DOM.getDocument()['root']['nodeId']
         links = self.page.tab.DOM.querySelectorAll(nodeId=node_id, selector='a')['nodeIds']
         imprint_link = None
