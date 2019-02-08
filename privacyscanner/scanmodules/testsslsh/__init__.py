@@ -10,3 +10,13 @@ class TestsslshHttpsScanModule(TestsslshScanModuleBase):
 
     def _get_host(self, result):
         return result['final_url']
+
+
+class TestsslshMailScanModule(TestsslshScanModuleBase):
+    name = 'testssl_mail'
+    required_keys = ['mail', 'testssl_mail']
+    target_type = 'mail'
+    target_parameters = [Parameter.STARTTLS, 'smtp']
+
+    def _get_host(self, result):
+        return result['mail']['domain'] + ':25'
