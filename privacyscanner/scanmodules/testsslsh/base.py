@@ -84,6 +84,12 @@ class TestsslshScanModuleBase(ScanModule):
             stage_dict['status'] = 'failed'
             stage_dict['error_code'] = e.exit_code
             stage_dict['error_message'] = str(e)
+        except Exception as e:
+            stage_dict['status'] = 'failed_with_bug'
+            stage_dict['error_code'] = -2000
+            stage_dict['error_message'] = '{}: {}'.format(e.__class__.__name__, e)
+            self.logger.exception('Programming error in testsslsh')
+            raise
         else:
             self.logger.info('testssl.sh result is complete.')
             stage_dict['status'] = 'complete'
