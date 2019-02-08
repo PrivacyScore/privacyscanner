@@ -4,8 +4,8 @@ SCAN_MODULE_OPTIONS = {}
 SCAN_MODULES = ['privacyscanner.scanmodules.chromedevtools.ChromeDevtoolsScanModule',
                 'privacyscanner.scanmodules.dns.DNSScanModule',
                 'privacyscanner.scanmodules.mail.MailScanModule',
-                'privacyscanner.scanmodules.serverleaks.ServerleaksScanModule',
-                'privacyscanner.scanmodules.testsslsh.TestsslshScanModule']
+                #'privacyscanner.scanmodules.serverleaks.ServerleaksScanModule',
+                'privacyscanner.scanmodules.testsslsh.TestsslshHttpsScanModule']
 NUM_WORKERS = 2
 MAX_EXECUTIONS = 100
 RAVEN_DSN = None

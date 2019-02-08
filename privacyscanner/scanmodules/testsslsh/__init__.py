@@ -3,6 +3,7 @@ import re
 import tarfile
 from pathlib import Path
 
+from privacyscanner.exceptions import RescheduleLater
 from privacyscanner.scanmodules import ScanModule
 from privacyscanner.scanmodules.testsslsh.scanner import TestsslshScanner, Parameter, TestsslshFailed, \
     TestsslshFailedPartially
@@ -25,49 +26,92 @@ class IncompleteStage(Exception):
         super().__init__()
 
 
-class TestsslshScanModule(ScanModule):
-    name = 'testsslsh'
+class TestsslshScanModuleBase(ScanModule):
+    name: str
+    required_keys: list
+    target_type: str
+    target_parameters: list
     dependencies = ['chromedevtools', 'dns']
-    required_keys = ['final_url']
 
     def __init__(self, options):
         set_default_options(options, {
             'install_base_dir': options['storage_path'] / 'testsslsh',
             'download_url': DOWNLOAD_URL,
-            'download_hash': DOWNLOAD_HASH
+            'download_hash': DOWNLOAD_HASH,
+            'stages': ['basic', 'vulns', 'vulns_ids'],
         })
+
+        for stage in options['stages']:
+            if not hasattr(self, '_scan_stage_' + stage):
+                raise ValueError('Invalid stage: `{}`.'.format(stage))
+
         super().__init__(options)
         self._install_dir = self.options['install_base_dir'] / self.options['download_hash']
 
     def scan_site(self, result, meta):
-        testssl = {
-            'error': None,
-            'error_code': None,
-            'stage': 0,
-            'stage_status': 'started'
-        }
-        result['testssl'] = testssl
-        web_parameters = []
-        try:
-            scan_result = self._scan_stage0(result['final_url'], web_parameters)
-        except IncompleteStage as e:
-            scan_result = e.partial_result
-            testssl['stage_status'] = 'incomplete'
-        except TestsslshFailed as e:
-            testssl['error'] = str(e)
-            testssl['error_code'] = e.exit_code
-            testssl['stage_status'] = 'failed'
+        stages = self.options['stages']
+        testssl_key = 'testssl_' + self.target_type
+        if testssl_key not in result:
+            result[testssl_key] = {
+                'current_stage': stages[0],
+                'stages': {}
+            }
+        result.mark_dirty(testssl_key)
+        testssl = result[testssl_key]
+        stage_key = testssl['current_stage']
+
+        self.logger.info('Current stage: %s', stage_key)
+        if stage_key not in stages:
+            self.logger.error('Stage `%s` is not available', stage_key)
             return
+
+        if stage_key not in testssl['stages']:
+            testssl['stages'][stage_key] = {'status': 'open'}
+        stage_dict = testssl['stages'][stage_key]
+
+        scan_result = None
+        try:
+            stage_method = getattr(self, '_scan_stage_' + stage_key)
+            host = self._get_host(result)
+            scan_result = stage_method(host, self.target_parameters)
+        except IncompleteStage as e:
+            self.logger.info('testssl.sh result is incomplete.')
+            scan_result = e.partial_result
+            stage_dict['status'] = 'incomplete'
+        except TestsslshFailed as e:
+            self.logger.error('testssl.sh failed with exit code %s: %s',
+                              e.exit_code, e)
+            stage_dict['status'] = 'failed'
+            stage_dict['error_code'] = e.exit_code
+            stage_dict['error_message'] = str(e)
         else:
-            testssl['stage_status'] = 'finished'
+            self.logger.info('testssl.sh result is complete.')
+            stage_dict['status'] = 'complete'
 
-        web_result = result['https']
-        for key, value in scan_result.items():
-            if key in web_result:
-                continue
-            web_result[key] = value
+        if scan_result:
+            target_result = result[self.target_type]
+            for key, value in scan_result.items():
+                if key in target_result:
+                    continue
+                target_result[key] = value
+            result.mark_dirty(self.target_type)
 
-    def _scan_stage0(self, target, extra_parameters):
+        has_failed = stage_dict['status'] != 'complete'
+        if has_failed:
+            del testssl['current_stage']
+            return
+
+        try:
+            next_stage = stages[stages.index(stage_key) + 1]
+        except IndexError:
+            del testssl['current_stage']
+            self.logger.info('%s was the final stage.', stage_key)
+            return
+        self.logger.info('Next stage: %s', next_stage)
+        testssl['current_stage'] = next_stage
+        raise RescheduleLater(10)
+
+    def _scan_stage_basic(self, target, extra_parameters):
         """Stage 0 scan: Contains the most relevant checks.
 
         These include:
@@ -280,13 +324,15 @@ class TestsslshScanModule(ScanModule):
             raise IncompleteStage(tls_result)
         return tls_result
 
-    def _scan_stage1(self, target, extra_parameters):
+    def _scan_stage_vulns(self, target, extra_parameters):
         """Stage 1 scan: Contains vulnerabilities which are IDS-proof"""
         # TODO: Implement this stage
+        return {}
 
-    def _scan_stage2(self, target, extra_parameters):
+    def _scan_stage_vulns_ids(self, target, extra_parameters):
         """Stage 2 scan: Contains vulnerabilities that could trigger an IDS"""
         # TODO: Implement this stage
+        return {}
 
     def update_dependencies(self):
         install_base_dir = self.options['install_base_dir']
@@ -305,6 +351,19 @@ class TestsslshScanModule(ScanModule):
                 tarball.extractall(path=install_base_dir)
         hash_symlink.symlink_to(directory_name, target_is_directory=True)
         self.logger.info('Successfully installed testssl.sh')
+
+    def _get_host(self, result):
+        raise NotImplemented
+
+
+class TestsslshHttpsScanModule(TestsslshScanModuleBase):
+    name = 'testssl_https'
+    required_keys = ['final_url', 'https', 'testssl_https']
+    target_type = 'https'
+    target_parameters = []
+
+    def _get_host(self, result):
+        return result['final_url']
 
 
 class ScanResultFindings:

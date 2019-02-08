@@ -11,8 +11,8 @@ class RetryScan(Exception):
 
 
 class RescheduleLater(Exception):
-    def __init__(self, message, not_before):
-        super().__init__(message)
+    def __init__(self, not_before, *args):
+        super().__init__(*args)
         if isinstance(not_before, int):
             not_before = timedelta(seconds=not_before)
         if isinstance(not_before, timedelta):
