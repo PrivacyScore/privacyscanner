@@ -6,9 +6,15 @@ from pathlib import Path
 
 
 class TestsslshFailed(Exception):
-    def __init__(self, exit_code, msg):
+    def __init__(self, exit_code, *args):
         self.exit_code = exit_code
-        super().__init__(msg)
+        super().__init__(*args)
+
+
+class TestsslshFailedPartially(TestsslshFailed):
+    def __init__(self, exit_code, partial_result, *args):
+        self.partial_result = partial_result
+        super().__init__(exit_code, *args)
 
 
 class Parameter(enum.Enum):
@@ -74,13 +80,31 @@ class TestsslshScanner:
                                check=False,
                                encoding='utf-8',
                                errors='replace')
-            if not (0 <= p.returncode < 50):
-                raise TestsslshFailed(p.returncode, p.stderr)
             f.seek(0)
-            scan_list = json.load(f)
+            try:
+                scan_list = json.load(f)
+            except json.JSONDecodeError:
+                raise TestsslshFailed(-1000, 'JSON decode failed.')
+
         result = {}
         for entry in scan_list:
             if 'id' not in entry:
                 continue
             result[entry['id']] = entry
+
+        # Check if we actually have any results. This means that we check
+        # whether there are keys that are not engine_problem or scanTime,
+        # which are available even if the host is not reachable.
+        min_length = 1
+        for no_result_key in ('engine_problem', 'scanTime'):
+            if no_result_key in result:
+                min_length += 1
+        if len(result) < min_length:
+            result = None
+
+        if not (0 <= p.returncode < 50):
+            if result is not None:
+                raise TestsslshFailedPartially(p.returncode, result, p.stderr)
+            raise TestsslshFailed(p.returncode, p.stderr)
+
         return result

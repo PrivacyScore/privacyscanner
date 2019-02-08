@@ -4,7 +4,8 @@ import tarfile
 from pathlib import Path
 
 from privacyscanner.scanmodules import ScanModule
-from privacyscanner.scanmodules.testsslsh.scanner import TestsslshScanner, Parameter, TestsslshFailed
+from privacyscanner.scanmodules.testsslsh.scanner import TestsslshScanner, Parameter, TestsslshFailed, \
+    TestsslshFailedPartially
 from privacyscanner.utils import set_default_options, download_file
 from privacyscanner.utils.tls import get_cipher_info
 
@@ -16,6 +17,13 @@ _TESTSSL_PROTOCOL_NEGOTIATED_REGEXP = re.compile('^Default protocol (TLS1.[0-3]|
 _TESTSSL_SUITE_NAME = re.compile('^([A-Za-z0-9-]+)(,| |$)')
 _TESTSSL_DH = re.compile('(\d+) bit (DH|ECDH)')
 _TESTSSL_ECDH_CURVE = re.compile(r'\(([^)]+)\)')
+
+
+class IncompleteStage(Exception):
+    def __init__(self, partial_result):
+        self.partial_result = partial_result
+        super().__init__()
+
 
 class TestsslshScanModule(ScanModule):
     name = 'testsslsh'
@@ -42,17 +50,22 @@ class TestsslshScanModule(ScanModule):
         web_parameters = []
         try:
             scan_result = self._scan_stage0(result['final_url'], web_parameters)
+        except IncompleteStage as e:
+            scan_result = e.partial_result
+            testssl['stage_status'] = 'incomplete'
         except TestsslshFailed as e:
             testssl['error'] = str(e)
             testssl['error_code'] = e.exit_code
             testssl['stage_status'] = 'failed'
             return
+        else:
+            testssl['stage_status'] = 'finished'
+
         web_result = result['https']
         for key, value in scan_result.items():
             if key in web_result:
                 continue
             web_result[key] = value
-        testssl['stage_status'] = 'finished'
 
     def _scan_stage0(self, target, extra_parameters):
         """Stage 0 scan: Contains the most relevant checks.
@@ -71,7 +84,12 @@ class TestsslshScanModule(ScanModule):
                                Parameter.SERVER_PREFERENCE,
                                Parameter.PHONE_OUT,
                                *extra_parameters)
-        scan_result = scanner.scan(target)
+        try:
+            scan_result = scanner.scan(target)
+            incomplete = False
+        except TestsslshFailedPartially as e:
+            scan_result = e.partial_result
+            incomplete = True
         findings = ScanResultFindings(scan_result, self.logger)
 
         forward_secrecy = {
@@ -258,6 +276,8 @@ class TestsslshScanModule(ScanModule):
             if finding_ct == 'yes (certificate extension)':
                 certificate_transparency['has_extension'] = True
 
+        if incomplete:
+            raise IncompleteStage(tls_result)
         return tls_result
 
     def _scan_stage1(self, target, extra_parameters):
