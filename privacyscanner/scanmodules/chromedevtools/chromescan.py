@@ -225,8 +225,7 @@ class ChromeScan:
                 logger.exception('Neither reponses, nor failed requests.')
                 chrome_error = 'not-reachable'
         result['chrome_error'] = chrome_error
-        if chrome_error:
-            result['reachable'] = False
+        result['reachable'] = not bool(chrome_error)
         return content
 
 
