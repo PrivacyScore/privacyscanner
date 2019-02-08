@@ -222,7 +222,7 @@ class ChromeScan:
             except NotReachableError as e:
                 if meta.is_first_try:
                     raise RetryScan('Not reachable')
-                logger.exception('Neither reponses, nor failed requests.')
+                logger.exception('Neither responses, nor failed requests.')
                 chrome_error = 'not-reachable'
         result['chrome_error'] = chrome_error
         result['reachable'] = not bool(chrome_error)
