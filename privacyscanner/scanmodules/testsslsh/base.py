@@ -269,7 +269,8 @@ class TestsslshScanModuleBase(ScanModule):
                 continue
             ciphers[key] = cipherlist == 'offered'
 
-        cipher_order = findings.get('cipher_order', ('server', 'client'))
+        cipher_order = findings.get('cipher_order',
+                                    ('server', 'NOT cipher order configured'))
         if cipher_order:
             tls_result['prefer_server_ciphers'] = cipher_order == 'server'
 
