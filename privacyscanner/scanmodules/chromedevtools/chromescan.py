@@ -286,7 +286,8 @@ class PageScanner:
 
         self._page.scan_start = datetime.utcnow()
         try:
-            self._tab.Page.navigate(url=result['site_url'], _timeout=15)
+            self._tab.Page.navigate(url=result['site_url'],
+                                    _timeout=options.get('timeout', 15))
         except pychrome.TimeoutException:
             self._tab.stop()
             browser.close_tab(self._tab)
