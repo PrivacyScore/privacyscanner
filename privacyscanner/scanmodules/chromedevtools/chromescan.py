@@ -134,6 +134,14 @@ class ChromeBrowserStartupError(Exception):
     pass
 
 
+class NotReachableError(Exception):
+    pass
+
+
+class DNSNotResolvedError(Exception):
+    pass
+
+
 class ChromeBrowser:
     def __init__(self, debugging_port=9222):
         self._debugging_port = debugging_port
@@ -195,20 +203,30 @@ class ChromeScan:
     def scan(self, result, logger, options, meta, debugging_port=9222):
         scanner = PageScanner(self._extractor_classes)
         chrome_error = None
+        content = None
         with ChromeBrowser(debugging_port) as browser:
             try:
                 content = scanner.scan(browser, result, logger, options)
             except pychrome.TimeoutException:
                 if meta.is_first_try:
                     raise RetryScan('First timeout with Chrome.')
-                else:
-                    chrome_error = 'timeout'
+                chrome_error = 'timeout'
             except ChromeBrowserStartupError:
                 if meta.is_first_try:
                     raise RetryScan('Chrome startup problem.')
-                else:
-                    chrome_error = 'startup_problem'
+                chrome_error = 'startup-problem'
+            except DNSNotResolvedError:
+                if meta.is_first_try:
+                    raise RetryScan('DNS could not be resolved.')
+                chrome_error = 'dns-not-resolved'
+            except NotReachableError as e:
+                if meta.is_first_try:
+                    raise RetryScan('Not reachable')
+                logger.exception('Neither reponses, nor failed requests.')
+                chrome_error = 'not-reachable'
         result['chrome_error'] = chrome_error
+        if chrome_error:
+            result['reachable'] = False
         return content
 
 
@@ -267,7 +285,13 @@ class PageScanner:
             self._tab.Debugger.pause()
 
         self._page.scan_start = datetime.utcnow()
-        self._tab.Page.navigate(url=result['site_url'], _timeout=30)
+        try:
+            self._tab.Page.navigate(url=result['site_url'], _timeout=15)
+        except pychrome.TimeoutException:
+            self._tab.stop()
+            browser.close_tab(self._tab)
+            self._reset()
+            raise
 
         # For some reason, we can not extract information reliably inside
         # a callback, therefore we wait until the load_event_fired
@@ -279,22 +303,32 @@ class PageScanner:
         time_start = time.time()
         while not self._page_loaded and time.time() - time_start < max_wait:
             self._tab.wait(0.5)
+
         has_responses = bool(self._page.response_log)
         if has_responses:
             self._page_interaction()
             self._tab.wait(5)
 
-        response = self._page.final_response
-        res = self._tab.Page.getResourceContent(frameId=response['extra']['frameId'],
-                                                url=response['url'])
-        content = b64decode(res['content']) if res['base64Encoded'] else res['content'].encode()
+            response = self._page.final_response
+            res = self._tab.Page.getResourceContent(frameId=response['extra']['frameId'],
+                                                    url=response['url'])
+            content = b64decode(res['content']) if res['base64Encoded'] else res['content'].encode()
+        else:
+            self._tab.stop()
+            browser.close_tab(self._tab)
+            if self._page.failed_request_log:
+                failed_request = self._page.failed_request_log[0]
+                if failed_request.get('errorText') == 'net::ERR_NAME_NOT_RESOLVED':
+                    self._reset()
+                    raise DNSNotResolvedError('DNS could not be resolved.')
+            self._reset()
+            raise NotReachableError('Not reachable for unknown reasons.')
 
         self._tab.Page.disable()
         if javascript_enabled:
             self._tab.Debugger.disable()
         self._unregister_network_callbacks()
         self._unregister_security_callbacks()
-        result['reachable'] = has_responses
         if has_responses:
             self._extract_information()
         self._tab.Network.disable()
