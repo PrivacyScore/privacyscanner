@@ -35,6 +35,7 @@ class Parameter(enum.Enum):
     VULN_BREACH = '-B'
     VULN_POODLE = '-O'
     VULN_TLS_FALLBACK = '-Z'
+    VULN_RENEGOTIATION = '-R'
     VULN_SWEET32 = '-W'
     VULN_BEAST = '-A'
     VULN_LUCKY13 = '-L'
