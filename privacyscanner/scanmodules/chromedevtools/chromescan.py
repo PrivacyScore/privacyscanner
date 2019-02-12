@@ -167,6 +167,10 @@ class ChromeBrowser:
         if program is None:
             program = shutil.which('chromium')
         if program is None:
+            macos_program = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+            if Path(macos_program).is_file():
+                program = macos_program
+        if program is None:
             raise ChromeBrowserStartupError('Could not find google-chrome or chromium.')
         self._p = subprocess.Popen([program] + CHROME_OPTIONS + extra_opts,
                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
