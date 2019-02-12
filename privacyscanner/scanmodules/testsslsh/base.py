@@ -416,6 +416,14 @@ class TestsslshScanModuleBase(ScanModule):
 
     def _scan_stage_vulns_ids(self, target, extra_parameters):
         """Stage 2 scan: Contains vulnerabilities that could trigger an IDS"""
+        scanner = TestsslshScanner(self._install_dir)
+        scanner.add_parameters(Parameter.VULN_HEARTBLEED,
+                               Parameter.VULN_CCS_INJECTION,
+                               Parameter.VULN_TICKETBLEED,
+                               Parameter.VULN_ROBOT,
+                               *extra_parameters)
+        scan_result = scanner.scan(target)
+        findings = ScanResultFindings(scan_result, self.logger)
         # TODO: Implement this stage
         return {}
 
