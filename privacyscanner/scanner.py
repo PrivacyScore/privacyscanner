@@ -78,6 +78,8 @@ def run_workers(args):
     from .worker import WorkerMaster
 
     config = load_config(args.config)
+    _require_dependencies(config)
+
     raven_client = None
     if has_raven and config['RAVEN_DSN']:
         raven_client = raven.Client(config['RAVEN_DSN'])
@@ -93,6 +95,7 @@ def run_workers(args):
 
 def scan_site(args):
     config = load_config(args.config)
+    _require_dependencies(config)
 
     site_parsed = urlparse(args.site)
     if site_parsed.scheme not in ('http', 'https'):
@@ -238,6 +241,12 @@ def print_master_config(args):
     output += '# privacyscanner print_master_config --config yourconfig.py\n'
     output += 'SCAN_MODULES = {}'.format(pprint.pformat(modules_topology, indent=4))
     print(output)
+
+
+def _require_dependencies(config):
+    if not config['STORAGE_PATH'].exists():
+        print('Please run `privacyscanner update_dependencies` before the first scan.')
+        sys.exit(1)
 
 
 def main():
