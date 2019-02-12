@@ -47,17 +47,17 @@ def load_config(config_file):
             if filename.is_file():
                 config_file = filename
                 break
-        else:
-            return config
-    config_file = Path(config_file)
-    try:
-        with config_file.open() as f:
-            code = compile(f.read(), config_file.name, 'exec')
-            exec(code, {}, config)
-    except IOError as e:
-        raise CommandError('Could not open config: {}'.format(e)) from e
-    except Exception as e:
-        raise CommandError('Could not parse config: {}: {}'.format(e.__class__.__name__, e)) from e
+    if config_file:
+        config_file = Path(config_file)
+        try:
+            with config_file.open() as f:
+                code = compile(f.read(), config_file.name, 'exec')
+                exec(code, {}, config)
+        except IOError as e:
+            raise CommandError('Could not open config: {}'.format(e)) from e
+        except Exception as e:
+            raise CommandError('Could not parse config: {}: {}'.format(
+                e.__class__.__name__, e)) from e
 
     config['STORAGE_PATH'] = Path(config['STORAGE_PATH']).expanduser()
 
