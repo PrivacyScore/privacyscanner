@@ -333,8 +333,86 @@ class TestsslshScanModuleBase(ScanModule):
 
     def _scan_stage_vulns(self, target, extra_parameters):
         """Stage 1 scan: Contains vulnerabilities which are IDS-proof"""
-        # TODO: Implement this stage
-        return {}
+        scanner = TestsslshScanner(self._install_dir)
+        scanner.add_parameters(Parameter.VULN_RENEGOTIATION,
+                               Parameter.VULN_CRIME,
+                               Parameter.VULN_BREACH,
+                               Parameter.VULN_POODLE,
+                               Parameter.VULN_TLS_FALLBACK,
+                               Parameter.VULN_SWEET32,
+                               Parameter.VULN_FREAK,
+                               Parameter.VULN_DROWN,
+                               Parameter.VULN_LOGJAM,
+                               Parameter.VULN_BEAST,
+                               Parameter.VULN_LUCKY13,
+                               Parameter.VULN_RC4,
+                               *extra_parameters)
+        scan_result = scanner.scan(target)
+        findings = ScanResultFindings(scan_result, self.logger)
+
+        vulns = {
+            'BEAST': None,
+            'BREACH': None,
+            'CRIME': None,
+            'DROWN': None,
+            'FREAK': None,
+            'Logjam': None, # ?
+            'POODLE': None,
+            'Sweet32': None,
+            'TLS_FALLBACK_SCSV': None,
+            'Lucky13': None,
+            'RC4': None,
+            'Renegotiation': None,
+            'Renegotiation_client': None,
+        }
+
+        beast = findings.get('BEAST')
+        if beast:
+            if 'VULNERABLE' in beast:
+                vulns['BEAST'] = {'vulnerable': True, 'ciphers': None}
+                beast_ciphers = findings.get('BEAST_CBC_TLS1')
+                if beast_ciphers:
+                    vulns['BEAST']['ciphers'] = beast_ciphers.split()
+            else:
+                vulns['BEAST'] = {'vulnerable': False}
+
+        vuln_no_extra = {
+            'BREACH': 'BREACH',
+            'CRIME': 'CRIME_TLS',
+            'Sweet32': 'SWEET32',
+            'DROWN': 'DROWN',
+            'FREAK': 'FREAK',
+            'POODLE': 'POODLE',
+            'RC4': 'RC4',
+            'Renegotiation': 'secure_renego',
+            'Renegotiation_client': 'secure_client_renego'
+        }
+        for vuln_name, vuln_key in vuln_no_extra.items():
+            finding = findings.get(vuln_key)
+            if finding:
+                vulns[vuln_name] = {'vulnerable': 'VULNERABLE' in finding}
+
+        sweet32 = findings.get('SWEET32', ('uses 64 bit block ciphers',
+                                           'not vulnerable'))
+        if sweet32:
+            vulns['Sweet32'] = {'vulnerable': sweet32 == 'uses 64 bit block ciphers'}
+
+        logjam = findings.get('LOGJAM')
+        if logjam:
+            login_common_primes = findings.get('LOGJAM-common_primes')
+            # TODO: Implement me
+
+        fallback = findings.get('fallback_SCSV')
+        if fallback:
+            # Do we really want to classify this as an vulnerability like
+            # testssl.sh does?
+            vulns['TLS_FALLBACK_SCSV'] = {'vulnerable': fallback != 'supported'}
+
+        lucky13 = findings.get('LUCKY13')
+        if lucky13:
+            vulns['Lucky13'] = {'vulnerable': lucky13 == 'potentially vulnerable'}
+
+        return vulns
 
     def _scan_stage_vulns_ids(self, target, extra_parameters):
         """Stage 2 scan: Contains vulnerabilities that could trigger an IDS"""
