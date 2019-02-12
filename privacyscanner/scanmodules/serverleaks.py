@@ -134,9 +134,16 @@ TRIALS = [
     (_gen_db_full_domain_key, '-----BEGIN'),
     (_gen_db_domain_pem, '-----BEGIN'),
     (_gen_db_sub_domain_pem, '-----BEGIN'),
-    (_gen_db_full_domain_pem, '-----BEGIN')
+    (_gen_db_full_domain_pem, '-----BEGIN'),
 
-    # TODO Add .DS_Store files for macOS
+    # Docker
+    # https://infosec.rm-it.de/2018/08/19/scanning-the-alexa-top-1m-sites-for-dockerfiles/
+    ('Dockerfile', 'FROM'),
+    # https://twitter.com/svblxyz/status/1045013939904532482
+    ('docker.env', '='),
+    ('.env', '='),
+    # Docker Compose
+    ('docker-compose.yml', 'version:'),
 ]
 
 
