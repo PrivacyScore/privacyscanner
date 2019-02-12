@@ -143,8 +143,11 @@ class DNSNotResolvedError(Exception):
 
 
 class ChromeBrowser:
-    def __init__(self, debugging_port=9222):
+    def __init__(self, debugging_port=9222, chrome_executable=None):
         self._debugging_port = debugging_port
+        if chrome_executable is None:
+            chrome_executable = find_chrome_executable()
+        self._chrome_executable = chrome_executable
 
     def __enter__(self):
         self._temp_dir = tempfile.TemporaryDirectory()
@@ -163,13 +166,9 @@ class ChromeBrowser:
             '--remote-debugging-port={}'.format(self._debugging_port),
             '--user-data-dir={}'.format(user_data_dir)
         ]
-        program = shutil.which('google-chrome')
-        if program is None:
-            program = shutil.which('chromium')
-        if program is None:
-            raise ChromeBrowserStartupError('Could not find google-chrome or chromium.')
-        self._p = subprocess.Popen([program] + CHROME_OPTIONS + extra_opts,
-                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        command = [self._chrome_executable] + CHROME_OPTIONS + extra_opts
+        self._p = subprocess.Popen(command, stdout=subprocess.DEVNULL,
+                                   stderr=subprocess.DEVNULL)
 
         self.browser = pychrome.Browser(url='http://127.0.0.1:{}'.format(
             self._debugging_port))
@@ -201,10 +200,11 @@ class ChromeScan:
         self._extractor_classes = extractor_classes
 
     def scan(self, result, logger, options, meta, debugging_port=9222):
+        executable = options['chrome_executable']
         scanner = PageScanner(self._extractor_classes)
         chrome_error = None
         content = None
-        with ChromeBrowser(debugging_port) as browser:
+        with ChromeBrowser(debugging_port, executable) as browser:
             try:
                 content = scanner.scan(browser, result, logger, options)
             except pychrome.TimeoutException:
@@ -528,3 +528,16 @@ class Page:
     def final_response(self):
         request_id = self.request_log[0]['requestId']
         return self.get_final_response_by_id(request_id)
+
+
+def find_chrome_executable():
+    chrome_executable = shutil.which('google-chrome')
+    if chrome_executable is None:
+        macos_chrome = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+        if Path(macos_chrome).exists():
+            chrome_executable = macos_chrome
+    if chrome_executable is None:
+        chrome_executable = shutil.which('chromium')
+    if chrome_executable is None:
+        raise ChromeBrowserStartupError('Could not find google-chrome or chromium.')
+    return chrome_executable
