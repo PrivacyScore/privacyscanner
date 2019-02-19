@@ -424,8 +424,45 @@ class TestsslshScanModuleBase(ScanModule):
                                *extra_parameters)
         scan_result = scanner.scan(target)
         findings = ScanResultFindings(scan_result, self.logger)
-        # TODO: Implement this stage
-        return {}
+
+        vulns = {
+            'Heartbleed': None,
+            'CCS_Injection': None,
+            'Ticketbleed': None,
+            'ROBOT': None
+        }
+        vuln_no_extra = {
+            'Heartbleed': 'heartbleed',
+            'Ticketbleed': 'ticketbleed',
+            'ROBOT': 'ROBOT'
+        }
+        for vuln_name, vuln_key in vuln_no_extra.items():
+            finding = findings.get(vuln_key)
+            if finding:
+                vulns[vuln_name] = {'vulnerable': 'VULNERABLE' in finding}
+
+        ccs = findings.get('CCS')
+        if ccs:
+            vulns['CCS_Injection'] = {'vulnerable': 'VULNERABLE' in ccs}
+            if 'likely VULNERABLE with' in ccs:
+                alert_byte = ccs.replace('likely VULNERABLE with ', '')
+                vulns['CCS_Injection']['alert_type'] = 'other (0x{})'.format(alert_byte)
+            elif 'likely VULNERABLE' in ccs:
+                vulns['CCS_Injection']['alert_type'] = 'bad_record_mac'
+
+            if 'probably not vulnerable but' in ccs:
+                byte_start = ccs.find('0x')
+                byte_end = ccs.find(' ', byte_start)
+                alert_byte = ccs[byte_start:byte_end]
+                if alert_byte == '0x0A':
+                    alert_type = 'unexpected_message'
+                elif alert_byte == '0x28':
+                    alert_type = 'handshake_failure'
+                else:
+                    alert_type = 'other ({})'.format(alert_byte)
+                vulns['CCS_Injection']['alert_type'] = alert_type
+
+        return vulns
 
     def update_dependencies(self):
         install_base_dir = self.options['install_base_dir']
