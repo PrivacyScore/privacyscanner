@@ -446,21 +446,22 @@ class TestsslshScanModuleBase(ScanModule):
             vulns['CCS_Injection'] = {'vulnerable': 'VULNERABLE' in ccs}
             if 'likely VULNERABLE with' in ccs:
                 alert_byte = ccs.replace('likely VULNERABLE with ', '')
-                vulns['CCS_Injection']['alert_type'] = 'other (0x{})'.format(alert_byte)
+                vulns['CCS_Injection']['alert_type'] = 'unknown_alert_0x{}'.format(alert_byte)
             elif 'likely VULNERABLE' in ccs:
                 vulns['CCS_Injection']['alert_type'] = 'bad_record_mac'
 
             if 'probably not vulnerable but' in ccs:
                 byte_start = ccs.find('0x')
                 byte_end = ccs.find(' ', byte_start)
-                alert_byte = ccs[byte_start:byte_end]
-                if alert_byte == '0x0A':
-                    alert_type = 'unexpected_message'
-                elif alert_byte == '0x28':
-                    alert_type = 'handshake_failure'
-                else:
-                    alert_type = 'other ({})'.format(alert_byte)
-                vulns['CCS_Injection']['alert_type'] = alert_type
+                if byte_start > 0 and byte_end > 0:
+                    alert_byte = ccs[byte_start:byte_end]
+                    if alert_byte == '0x0A':
+                        alert_type = 'unexpected_message'
+                    elif alert_byte == '0x28':
+                        alert_type = 'handshake_failure'
+                    else:
+                        alert_type = 'unknown_alert_{}'.format(alert_byte)
+                    vulns['CCS_Injection']['alert_type'] = alert_type
 
         return vulns
 
