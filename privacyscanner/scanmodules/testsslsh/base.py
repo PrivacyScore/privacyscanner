@@ -406,7 +406,8 @@ class TestsslshScanModuleBase(ScanModule):
         if fallback:
             # Do we really want to classify this as an vulnerability like
             # testssl.sh does?
-            vulns['TLS_FALLBACK_SCSV'] = {'vulnerable': fallback != 'supported'}
+            vulns['TLS_FALLBACK_SCSV'] = {'vulnerable': fallback != 'supported' and
+                                          'no protocol below ' not in fallback}
 
         lucky13 = findings.get('LUCKY13')
         if lucky13:
