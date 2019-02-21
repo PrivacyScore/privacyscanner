@@ -539,5 +539,7 @@ def find_chrome_executable():
     if chrome_executable is None:
         chrome_executable = shutil.which('chromium')
     if chrome_executable is None:
+        chrome_executable = shutil.which('chromium-browser')
+    if chrome_executable is None:
         raise ChromeBrowserStartupError('Could not find google-chrome or chromium.')
     return chrome_executable
