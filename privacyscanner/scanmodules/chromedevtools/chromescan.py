@@ -15,6 +15,7 @@ import pychrome
 from requests.exceptions import ConnectionError
 
 from privacyscanner.exceptions import RetryScan
+from privacyscanner.utils import kill_everything
 
 # See https://github.com/GoogleChrome/chrome-launcher/blob/master/docs/chrome-flags-for-tools.md
 # See also https://peter.sh/experiments/chromium-command-line-switches/
@@ -186,12 +187,7 @@ class ChromeBrowser:
             raise ChromeBrowserStartupError('Could not connect to Chrome')
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self._p.terminate()
-        try:
-            self._p.wait(1)
-        except subprocess.TimeoutExpired:
-            self._p.kill()
-            self._p.wait()
+        kill_everything(self._p.pid)
         self._temp_dir.cleanup()
 
 
