@@ -1,6 +1,5 @@
 from binascii import hexlify
 from datetime import datetime
-import ssl
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -8,6 +7,8 @@ from cryptography.hazmat.primitives.asymmetric.dsa import DSAPublicKey
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from cryptography.x509 import load_der_x509_certificate
+
+from privacyscanner.utils.cipherinfo import lookup_ciphersuite
 
 
 def get_certificate_info(cert_der):
@@ -41,9 +42,7 @@ def get_certificate_info(cert_der):
 
 def get_cipher_info(cipher_tuple):
     cipher_string, protocol, bits = cipher_tuple
-    context = ssl.create_default_context()
-    ciphers_lookup = {cipher['name']: cipher for cipher in context.get_ciphers()}
-    return _build_cipher_info(ciphers_lookup[cipher_string], protocol)
+    return _build_cipher_info(lookup_ciphersuite(cipher_string), protocol)
 
 
 def _build_cipher_info(cipher_info, protocol):
