@@ -382,7 +382,7 @@ class TestsslshScanModuleBase(ScanModule):
             'Sweet32': 'SWEET32',
             'DROWN': 'DROWN',
             'FREAK': 'FREAK',
-            'POODLE': 'POODLE',
+            'POODLE': 'POODLE_SSL',  # TODO: handle POODLE_TLS once implemented
             'RC4': 'RC4',
             'Renegotiation': 'secure_renego',
             'Renegotiation_client': 'secure_client_renego'
@@ -410,7 +410,8 @@ class TestsslshScanModuleBase(ScanModule):
 
         lucky13 = findings.get('LUCKY13')
         if lucky13:
-            vulns['Lucky13'] = {'vulnerable': lucky13 == 'potentially vulnerable'}
+            # experimental; can be a false positive with a fixed openssl version
+            vulns['Lucky13'] = {'vulnerable': 'potentially vulnerable' in lucky13}
 
         return vulns
 
