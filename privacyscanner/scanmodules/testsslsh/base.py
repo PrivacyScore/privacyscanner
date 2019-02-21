@@ -481,7 +481,7 @@ class TestsslshScanModuleBase(ScanModule):
             f.seek(0)
             with tarfile.open(fileobj=f) as tarball:
                 directory_name = Path(tarball.next().name).parts[0]
-                tarball.extractall(path=install_base_dir)
+                tarball.extractall(path=str(install_base_dir))
         hash_symlink.symlink_to(directory_name, target_is_directory=True)
         self.logger.info('Successfully installed testssl.sh')
 

@@ -25,7 +25,7 @@ class NumericLock:
         while True:
             i += 1
             try:
-                f = open(self.lock_dir / ('%d.lock' % i), 'wb')
+                f = (self.lock_dir / ('%d.lock' % i)).open('wb')
                 fcntl.lockf(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
                 self._lock_file = f
                 return i
