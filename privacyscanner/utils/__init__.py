@@ -7,6 +7,8 @@ import time
 from base64 import b32encode
 from urllib.request import Request, urlopen
 
+import psutil
+
 
 FAKE_UA = 'Mozilla/5.0 (X11; Linux x86_64; rv:61.0) Gecko/20100101 Firefox/61.0'
 
@@ -94,3 +96,32 @@ def calculate_jaccard_index(a: bytes, b: bytes) -> float:
     intersection = a.intersection(b)
     union = a.union(b)
     return len(intersection) / len(union)
+
+
+def kill_everything(pid, timeout=3, only_children=False):
+    # First, we take care of the children.
+    procs = psutil.Process(pid).children()
+    # Suspend first before sending SIGTERM to avoid thundering herd problems
+    for p in procs:
+        p.suspend()
+    # Be nice. Ask them first to terminate, before we kill them.
+    for p in procs:
+        p.terminate()
+    # This delivers the SIGTERM right after resuming, so no chance to
+    # terminate by broken pipes etc. first.
+    for p in procs:
+        p.resume()
+    gone, alive = psutil.wait_procs(procs, timeout=timeout)
+    # They are still alive. Kill'em all. No mercy anymore.
+    if alive:
+        for p in alive:
+            p.kill()
+        psutil.wait_procs(alive, timeout=timeout)
+    if not only_children:
+        # Time for pid to go ...
+        p = psutil.Process(pid)
+        p.terminate()
+        p.wait(timeout)
+        if p.is_running():
+            p.kill()
+            p.wait(timeout)

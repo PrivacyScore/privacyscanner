@@ -8,7 +8,6 @@ import time
 from datetime import datetime
 from multiprocessing.connection import wait
 
-import psutil
 import psycopg2
 
 from privacyscanner.exceptions import RetryScan, RescheduleLater
@@ -19,6 +18,8 @@ from privacyscanner.result import Result
 from privacyscanner.scanmeta import ScanMeta
 from privacyscanner.scanmodules import load_modules
 from privacyscanner.loghandlers import WorkerWritePipeHandler, ScanStreamHandler
+from privacyscanner.utils import kill_everything
+
 
 _JOB_STARTED_QUERY = """
 UPDATE scanner_scaninfo
@@ -353,32 +354,3 @@ class WorkerProcess(multiprocessing.Process):
         # gets. Therefore move it into an own process group.
         os.setpgid(0, 0)
         super().run()
-
-
-def kill_everything(pid, timeout=3, only_children=False):
-    # First, we take care of the children.
-    procs = psutil.Process(pid).children()
-    # Suspend first before sending SIGTERM to avoid thundering herd problems
-    for p in procs:
-        p.suspend()
-    # Be nice. Ask them first to terminate, before we kill them.
-    for p in procs:
-        p.terminate()
-    # This delivers the SIGTERM right after resuming, so no chance to
-    # terminate by broken pipes etc. first.
-    for p in procs:
-        p.resume()
-    gone, alive = psutil.wait_procs(procs, timeout=timeout)
-    # They are still alive. Kill'em all. No mercy anymore.
-    if alive:
-        for p in alive:
-            p.kill()
-        psutil.wait_procs(alive, timeout=timeout)
-    if not only_children:
-        # Time for pid to go ...
-        p = psutil.Process(pid)
-        p.terminate()
-        p.wait(timeout)
-        if p.is_running():
-            p.kill()
-            p.wait(timeout)
