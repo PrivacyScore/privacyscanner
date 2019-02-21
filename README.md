@@ -1,6 +1,15 @@
 privacyscanner
 ==============
 
+Installation
+------------
+
+privacyscanner is distributed via PyPI and can be easily installed using pip:
+
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install privacyscanner
+
 Usage
 -----
 
