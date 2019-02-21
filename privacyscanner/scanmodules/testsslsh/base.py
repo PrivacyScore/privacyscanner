@@ -27,10 +27,10 @@ class IncompleteStage(Exception):
 
 
 class TestsslshScanModuleBase(ScanModule):
-    name: str
-    required_keys: list
-    target_type: str
-    target_parameters: list
+    name = None  # type: str
+    required_keys = None  # type: list
+    target_type = None  # type: str
+    target_parameters = None  # type: list
     dependencies = ['chromedevtools', 'dns']
 
     def __init__(self, options):

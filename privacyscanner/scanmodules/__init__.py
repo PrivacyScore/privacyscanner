@@ -8,11 +8,11 @@ class ModuleLoadError(Exception):
 
 
 class ScanModule:
-    name: str
-    dependencies: List[str]
-    required_keys: List[str]
-    logger: logging.Logger
-    options: Dict[str, Any]
+    name = None  # type: str
+    dependencies = None  # type: List[str]
+    required_keys = None  # type: List[str]
+    logger = None  # type: logging.Logger
+    options = None  # type: Dict[str, Any]
 
     def __init__(self, options):
         self.options = options
