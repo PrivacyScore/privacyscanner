@@ -1,6 +1,40 @@
 Changelog
 =========
 
+0.5.0
+-----
+
+* Log files are written to dedicated `logs` directory.
+* Allow to set options to all scan modules via `__all__` module name.
+* Allow to configure `STORAGE\_PATH`, where dependencies like GeoIP database
+  and alike are stored. Defaults to `~/.local/share/privacyscanner`.
+* Fix print\_master\_config command.
+* The `privacyscanner scan` command can now run concurrently.
+* Add `disable\_javascript` option to chromedevtools scan module.
+* The result key `tls` has been renamed to `https`.
+* Rescan a HTTP site with HTTPS if it is available.
+* Add information about the HTTP-\>HTTPS and vice versa redirects to the result.
+* logger is now available as attribute on a scanning module.
+* Add dns module which gathers DNS and GeoIP information for all redirecting
+  sites up to the final URL and MX records for the site url itself.
+* network scan module has been removed, functionality moved to chromedevtools
+  and the dns scan module.
+* Add mail scan module. Gathers some mail functionality and TLS information
+  about the mailserver.
+* Add testsslsh scan module which performs extensive TLS checks using testssl.sh
+  from Dirk Wetter (https://testssl.sh). These are actually two scan modules:
+  testsslsh\_https for HTTPS and testsslsh\_mail for STMP, sharing the same
+  code basis.
+* Avoid DOM changes during imprint search. This should resolve some exceptions
+  that occured in that extractor.
+* Show error message when dependencies are not installed instead of raising an
+  exception that bubbles up to the user.
+* Try to autodetect Google Chrome on MacOS.
+* Users can provide the path to the Google Chrome executable using the
+ `chrome\_executable` scan module option on chromedevtools.
+* Add Docker and Docker Compose files to serverleaks scan module.
+* Also look for `chromium-browser` to find Chrome (Fedora).
+
 0.4.0
 -----
 
