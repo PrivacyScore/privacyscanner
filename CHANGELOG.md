@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.5.2
+-----
+
+* Use more robust method to terminate Chrome.
+
 0.5.1
 -----
 
