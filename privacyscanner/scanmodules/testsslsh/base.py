@@ -49,6 +49,9 @@ class TestsslshScanModuleBase(ScanModule):
         self._install_dir = self.options['install_base_dir'] / self.options['download_hash']
 
     def scan_site(self, result, meta):
+        if not self._can_run(result):
+            self.logger.info('Skipping testssl.sh checks: No (START)TLS found.')
+            return
         stages = self.options['stages']
         testssl_key = 'testssl_' + self.target_type
         if testssl_key not in result:
@@ -486,6 +489,9 @@ class TestsslshScanModuleBase(ScanModule):
         self.logger.info('Successfully installed testssl.sh')
 
     def _get_host(self, result):
+        raise NotImplemented
+
+    def _can_run(self, result):
         raise NotImplemented
 
 

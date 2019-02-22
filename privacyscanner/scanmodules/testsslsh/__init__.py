@@ -9,7 +9,15 @@ class TestsslshHttpsScanModule(TestsslshScanModuleBase):
     target_parameters = []
 
     def _get_host(self, result):
-        return result['final_url']
+        host_url = result['final_url']
+        # An HTTP site might have an HTTPS version too, but does not redirect
+        # to it. In this case, we still want to scan the HTTPS version.
+        if host_url.startswith('http://'):
+            host_url = 'https://' + host_url[len('http://'):]
+        return host_url
+
+    def _can_run(self, result):
+        return result['https']['has_tls']
 
 
 class TestsslshMailScanModule(TestsslshScanModuleBase):
@@ -20,3 +28,6 @@ class TestsslshMailScanModule(TestsslshScanModuleBase):
 
     def _get_host(self, result):
         return result['mail']['domain'] + ':25'
+
+    def _can_run(self, result):
+        return result['mail']['has_starttls']
