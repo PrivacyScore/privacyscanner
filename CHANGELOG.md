@@ -9,8 +9,8 @@ Changelog
 0.5.1
 -----
 
-* Fix Python3.5 compatibility
-* Add support for older OpenSSL versions in Python
+* Fix Python3.5 compatibility.
+* Add support for older OpenSSL versions in Python.
 
 0.5.0
 -----
