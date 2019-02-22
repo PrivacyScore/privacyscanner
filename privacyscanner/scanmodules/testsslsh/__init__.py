@@ -30,4 +30,9 @@ class TestsslshMailScanModule(TestsslshScanModuleBase):
         return result['mail']['domain'] + ':25'
 
     def _can_run(self, result):
-        return result['mail']['has_starttls']
+        # If the mail host is not reachable, the has_starttls key is
+        # intentionally missing.
+        # If the mail host is reachable, but we could not successfully
+        # perform an EHLO to switch to STARTTLS later on, we skip
+        # scanning too.
+        return bool(result['mail'].get('has_starttls'))
