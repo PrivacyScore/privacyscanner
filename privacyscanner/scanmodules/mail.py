@@ -100,6 +100,9 @@ class MailScanModule(ScanModule):
         except socket.timeout:
             mail['error'] = 'socket_timeout'
         finally:
-            conn.close()
+            # We only close the connection if we are actually connected
+            # (yes, this how smtplib checks for this)
+            if hasattr(conn, 'sock') and conn.sock:
+                conn.close()
 
         result.mark_dirty('mail')
