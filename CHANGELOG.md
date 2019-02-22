@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.5.3
+-----
+
+* Fix: testsslsh will only scan if there is actually (START)TLS.
+* Fix: mail scan module will add reachable=False key instead of throwing
+  an exception when the mailserver is not reachable.
+* Fix: TLS 1.3 will be detected correctly instead of throwing an exception.
+
 0.5.2
 -----
 
