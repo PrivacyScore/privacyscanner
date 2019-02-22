@@ -4,11 +4,18 @@ privacyscanner
 Installation
 ------------
 
+privacyscanner needs a Python 3 runtime. Depending on your environment you
+may also need the Python 3 header files in order to instal privacyscanner.
+For instance, on Debian and Ubuntu Linux you should be able
+to obtain all necessary files by executing:
+
+    sudo apt-get install python3 python3-pip python3-dev
+
 privacyscanner is distributed via PyPI and can be easily installed using pip:
 
     python3 -m venv venv
     source venv/bin/activate
-    pip install privacyscanner
+    pip install wheel privacyscanner
 
 Usage
 -----
