@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.5.4
+-----
+
+* Update ciphersuite list to include the ciphers that are supported by the
+  OpenSSL binaries in testssl.sh. This should resolve exceptions when
+  testssh.sh finds a ciphersuite that is not available in either the
+  our integrated ciphersuite list or the system's OpenSSL library.
+
 0.5.3
 -----
 
