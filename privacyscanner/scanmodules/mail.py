@@ -1,3 +1,4 @@
+import socket
 import ssl
 from collections import namedtuple
 import smtplib
@@ -48,6 +49,7 @@ class MailScanModule(ScanModule):
 
         conn = smtplib.SMTP(local_hostname=self.options['local_hostname'],
                             timeout=self.options['timeout'])
+        mail['reachable'] = False
         try:
             # The Python API of smtplib has a flaw: If you pass the host
             # to the initializer, it will connect and set self._host to
@@ -60,6 +62,8 @@ class MailScanModule(ScanModule):
             conn._host = mail_host
             code, banner = conn.connect(mail_host)
             mail['banner'] = banner.decode('utf-8', errors='replace')
+            mail['reachable'] = True
+            mail['has_starttls'] = None
             conn.ehlo_or_helo_if_needed()
             has_starttls = conn.has_extn('STARTTLS')
             mail['has_starttls'] = has_starttls
@@ -93,6 +97,8 @@ class MailScanModule(ScanModule):
             mail['error'] = 'EHLO'
         except smtplib.SMTPException:
             mail['error'] = 'other'
+        except socket.timeout:
+            mail['error'] = 'socket_timeout'
         finally:
             conn.close()
 
