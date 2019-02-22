@@ -214,13 +214,14 @@ class TestsslshScanModuleBase(ScanModule):
         for source_key, target_key in protocol_name_map.items():
             protocol = findings.get(source_key, (
                 'offered',
+                'offered with final',
                 'not offered',
                 'is not offered', # Why, testssl.sh, WHY?
                 'not offered and downgraded to a weaker protocol'
             ))
             if protocol is None:
                 continue
-            protocols[target_key] = protocol == 'offered'
+            protocols[target_key] = protocol in ('offered', 'offered with final')
 
             # Why, testssl.sh, WHY?
             order_key = source_key.replace('TLS', 'TLSv')
