@@ -123,7 +123,6 @@ TRIALS = [
      #('.htaccess', 'unknown'),
     ('workspace.xml', 'FileEditorManager'),
     ('.gitlab-ci.yml', 'job'),
-    ('.env', _match_env_file),
     # Check for Database dumps
     # sqldump - MySQL/MariaDB
     ('dump.db', _match_db_dump),
