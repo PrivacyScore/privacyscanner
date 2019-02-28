@@ -1,6 +1,13 @@
 Changelog
 =========
 
+0.5.5
+-----
+
+* Fix: (Delayed) redirects via meta tags or JavaScript will produce correct
+  results now instead of crashing with an exception when accessing the
+  page content (calling Page.getResourceContent). Fixes GitHub issue #17.
+
 0.5.4
 -----
 
