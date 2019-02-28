@@ -16,6 +16,7 @@ import pychrome
 from requests.exceptions import ConnectionError
 
 from privacyscanner.exceptions import RetryScan
+from privacyscanner.scanmodules.chromedevtools.utils import scripts_disabled
 from privacyscanner.utils import kill_everything
 
 # See https://github.com/GoogleChrome/chrome-launcher/blob/master/docs/chrome-flags-for-tools.md
@@ -229,6 +230,7 @@ class ChromeScan:
 class PageScanner:
     def __init__(self, extractor_classes):
         self._extractor_classes = extractor_classes
+        self._page_loaded = threading.Event()
         self._reset()
 
     def scan(self, browser, result, logger, options):
@@ -262,6 +264,8 @@ class PageScanner:
         self._tab.Security.setIgnoreCertificateErrors(ignore=True)
 
         self._tab.Page.loadEventFired = self._cb_load_event_fired
+        self._tab.Page.frameScheduledNavigation = self._cb_frame_scheduled_navigation
+        self._tab.Page.frameClearedScheduledNavigation = self._cb_frame_cleared_scheduled_navigation
         self._tab.Page.javascriptDialogOpening = self._cb_javascript_dialog_opening
         extra_scripts = '\n'.join('(function() { %s })();' % script
                                   for script in self._extra_scripts)
@@ -290,19 +294,43 @@ class PageScanner:
             self._reset()
             raise
 
-        # For some reason, we can not extract information reliably inside
-        # a callback, therefore we wait until the load_event_fired
-        # callback has been fired. In order to catch JavaScript actions
-        # that occur after the load event, we wait another 5 seconds.
-        # There is a network idle event which may could be used instead,
-        # but that needs to be evaluated.
-        max_wait = 30
-        self._page_loaded.wait(max_wait)
-
+        # We wait for the page to be loaded. Then we wait until we have the
+        # page in a stable state, i.e. not changing the URL anymore.
+        load_max_wait = 30
+        self._page_loaded.wait(load_max_wait)
         has_responses = bool(self._page.response_log)
         if has_responses:
-            self._page_interaction()
-            self._tab.wait(5)
+            total_wait = 60
+            time_start = time.time()
+            while True:
+                # If the document was changed, we have to wait for the page to
+                # load again. This will not wait if there was no change,
+                # because page_loaded event is already set.
+                self._page_loaded.wait(load_max_wait)
+                self._page_interaction()
+                # We wait 5 seconds after the page has loaded, so that any
+                # resources can load. This includes JavaScript which might
+                # issue further requests.
+                if not self._document_will_change.wait(5):
+                    # OK, our page should be stable now. So we will disable any
+                    # further requests by just intercepting them and not
+                    # taking care of them.
+                    # However, to avoid a race condition, we first disable
+                    # scripts shortly to check again.
+                    with scripts_disabled(self._tab, options):
+                        if self._document_will_change.is_set():
+                            # It changed again, so yet another loop :-(
+                            continue
+                        self._tab.Network.setRequestInterception(patterns=[{
+                            'resourceType': 'Document'
+                        }])
+                    break
+                # We will only run this "infinite" loop for up to total_wait
+                # seconds. If the document changes over and over again, there
+                # is nothing we can evaluate reasonably.
+                if time_start + total_wait <= time.time():
+                    self._reset()
+                    raise NotReachableError('No stable page to scan.')
 
             response = self._page.final_response
             res = self._tab.Page.getResourceContent(frameId=response['extra']['frameId'],
@@ -400,6 +428,16 @@ class PageScanner:
 
     def _cb_load_event_fired(self, timestamp, **kwargs):
         self._page_loaded.set()
+    
+    def _cb_frame_scheduled_navigation(self, frameId, delay, reason, url, **kwargs):
+        # We assume that our scan will finish within 60 seconds including
+        # a security margin. So we just ignore scheduled navigations if
+        # they are too far in future.
+        if delay <= 60:
+            self._document_will_change.set()
+    
+    def _cb_frame_cleared_scheduled_navigation(self, frameId):
+        self._document_will_change.clear()
 
     def _cb_javascript_dialog_opening(self, **kwargs):
         self._tab.Page.handleJavaScriptDialog(accept=True)
@@ -479,7 +517,8 @@ class PageScanner:
             extractor.register_javascript()
 
     def _reset(self):
-        self._page_loaded = threading.Event()
+        self._page_loaded.clear()
+        self._document_will_change = threading.Event()
         self._debugger_attached = False
         self._debugger_paused = False
         self._log_breakpoint = None
