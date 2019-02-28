@@ -3,6 +3,7 @@ import random
 import shutil
 import subprocess
 import tempfile
+import threading
 import time
 import warnings
 from base64 import b64decode
@@ -296,9 +297,7 @@ class PageScanner:
         # There is a network idle event which may could be used instead,
         # but that needs to be evaluated.
         max_wait = 30
-        time_start = time.time()
-        while not self._page_loaded and time.time() - time_start < max_wait:
-            self._tab.wait(0.5)
+        self._page_loaded.wait(max_wait)
 
         has_responses = bool(self._page.response_log)
         if has_responses:
@@ -400,7 +399,7 @@ class PageScanner:
         self._debugger_paused = False
 
     def _cb_load_event_fired(self, timestamp, **kwargs):
-        self._page_loaded = True
+        self._page_loaded.set()
 
     def _cb_javascript_dialog_opening(self, **kwargs):
         self._tab.Page.handleJavaScriptDialog(accept=True)
@@ -480,7 +479,7 @@ class PageScanner:
             extractor.register_javascript()
 
     def _reset(self):
-        self._page_loaded = False
+        self._page_loaded = threading.Event()
         self._debugger_attached = False
         self._debugger_paused = False
         self._log_breakpoint = None
