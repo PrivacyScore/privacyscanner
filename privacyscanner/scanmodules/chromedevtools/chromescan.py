@@ -491,14 +491,25 @@ class PageScanner:
 class Page:
     def __init__(self, tab=None):
         self.request_log = []
+        self.document_request_log = []
         self.failed_request_log = []
         self.response_log = []
         self.security_state_log = []
         self.scan_start = None
         self.tab = tab
         self._response_lookup = defaultdict(list)
+        self._frame_id = None
 
     def add_request(self, request):
+        # We remember if there were requests that changed the displayed
+        # document in the current tab (frameId)
+        if self._frame_id is None:
+            self._frame_id = request['extra']['frameId']
+        document_changed = (request['extra']['type'] == 'Document' and
+                            request['extra']['frameId'] == self._frame_id)
+        if document_changed:
+            self.document_request_log.append(request)
+
         self.request_log.append(request)
 
     def add_failed_request(self, failed_request):
@@ -521,7 +532,7 @@ class Page:
 
     @property
     def final_response(self):
-        request_id = self.request_log[0]['requestId']
+        request_id = self.document_request_log[-1]['requestId']
         return self.get_final_response_by_id(request_id)
 
 
