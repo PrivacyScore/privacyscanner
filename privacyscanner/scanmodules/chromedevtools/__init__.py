@@ -3,10 +3,11 @@ from pathlib import Path
 from privacyscanner.scanmodules import ScanModule
 from privacyscanner.scanmodules.chromedevtools.chromescan import ChromeScan, find_chrome_executable
 from privacyscanner.scanmodules.chromedevtools.extractors import FinalUrlExtractor, \
-    GoogleAnalyticsExtractor, CookiesExtractor, RequestsExtractor,  RedirectChainExtractor, \
+    GoogleAnalyticsExtractor, CookiesExtractor, RequestsExtractor, RedirectChainExtractor, \
     TLSDetailsExtractor, CertificateExtractor, ThirdPartyExtractor, InsecureContentExtractor, \
     FailedRequestsExtractor, SecurityHeadersExtractor, TrackerDetectExtractor, \
-    CookieStatsExtractor, JavaScriptLibsExtractor, ScreenshotExtractor, ImprintExtractor
+    CookieStatsExtractor, JavaScriptLibsExtractor, ScreenshotExtractor, ImprintExtractor, \
+    HSTSPreloadExtractor
 from privacyscanner.scanmodules.chromedevtools.utils import TLDEXTRACT_CACHE_FILE, parse_domain
 from privacyscanner.utils import file_is_outdated, set_default_options, calculate_jaccard_index
 
@@ -16,10 +17,10 @@ EXTRACTOR_CLASSES = [FinalUrlExtractor, RedirectChainExtractor, GoogleAnalyticsE
                      CertificateExtractor, ThirdPartyExtractor, InsecureContentExtractor,
                      FailedRequestsExtractor, SecurityHeadersExtractor, TrackerDetectExtractor,
                      CookieStatsExtractor, JavaScriptLibsExtractor, ScreenshotExtractor,
-                     ImprintExtractor]
+                     ImprintExtractor, HSTSPreloadExtractor]
 
 EXTRACTOR_CLASSES_HTTPS_RUN = [FinalUrlExtractor, TLSDetailsExtractor, CertificateExtractor,
-                               InsecureContentExtractor]
+                               InsecureContentExtractor, HSTSPreloadExtractor]
 
 
 class ChromeDevtoolsScanModule(ScanModule):

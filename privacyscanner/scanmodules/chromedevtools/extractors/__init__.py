@@ -14,3 +14,4 @@ from .tlsdetails import TLSDetailsExtractor
 from .trackerdetect import TrackerDetectExtractor
 from .screenshot import ScreenshotExtractor
 from .imprint import ImprintExtractor
+from .hstspreload import HSTSPreloadExtractor
