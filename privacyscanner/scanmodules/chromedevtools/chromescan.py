@@ -519,7 +519,9 @@ class PageScanner:
 
     def _register_javascript(self):
         for extractor in self._extractors:
-            extractor.register_javascript()
+            extra_javascript = extractor.register_javascript()
+            if extra_javascript:
+                self._extra_scripts.append(extra_javascript)
 
     def _reset(self):
         self._page_loaded.clear()
