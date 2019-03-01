@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from privacyscanner.filehandlers import NoOpFileHandler
+from privacyscanner.result import Result
 from privacyscanner.scanmodules import ScanModule
 from privacyscanner.scanmodules.chromedevtools.chromescan import ChromeScan, find_chrome_executable
 from privacyscanner.scanmodules.chromedevtools.extractors import FinalUrlExtractor, \
@@ -53,7 +55,7 @@ class ChromeDevtoolsScanModule(ScanModule):
             # We use this to annotate the http result with TLS details and
             # insecure content details if there is not redirect to https
             site_url = 'https://' + result['site_url'][len('http://'):]
-            extra_result = {'site_url': site_url}
+            extra_result = Result({'site_url': site_url}, NoOpFileHandler())
             chrome_scan = ChromeScan(EXTRACTOR_CLASSES_HTTPS_RUN)
             https_content = chrome_scan.scan(extra_result, self.logger, self.options, meta,
                                              debugging_port)
