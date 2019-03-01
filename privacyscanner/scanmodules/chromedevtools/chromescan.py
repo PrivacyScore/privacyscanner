@@ -125,6 +125,14 @@ ON_NEW_DOCUMENT_JAVASCRIPT = """
         var setBreakpointOnThisLine;
     }
     
+    window.alert = function() {};
+    window.confirm = function() {
+        return true;
+    };
+    window.prompt = function() {
+        return true;
+    };
+    
     __extra_scripts__
 })();
 """.lstrip()
@@ -266,7 +274,6 @@ class PageScanner:
         self._tab.Page.loadEventFired = self._cb_load_event_fired
         self._tab.Page.frameScheduledNavigation = self._cb_frame_scheduled_navigation
         self._tab.Page.frameClearedScheduledNavigation = self._cb_frame_cleared_scheduled_navigation
-        self._tab.Page.javascriptDialogOpening = self._cb_javascript_dialog_opening
         extra_scripts = '\n'.join('(function() { %s })();' % script
                                   for script in self._extra_scripts)
         source = ON_NEW_DOCUMENT_JAVASCRIPT.replace('__extra_scripts__', extra_scripts)
@@ -439,9 +446,6 @@ class PageScanner:
     
     def _cb_frame_cleared_scheduled_navigation(self, frameId):
         self._document_will_change.clear()
-
-    def _cb_javascript_dialog_opening(self, **kwargs):
-        self._tab.Page.handleJavaScriptDialog(accept=True)
 
     def _cb_security_state_changed(self, **state):
         self._page.security_state_log.append(state)
