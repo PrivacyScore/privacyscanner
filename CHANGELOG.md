@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.6.1
+-----
+
+* Fix bug with HSTS Preload detection on HTTP only sites.
+
 0.6.0
 -----
 
