@@ -116,7 +116,7 @@ class DNSScanModule(ScanModule):
         qname = reversename.from_address(address)
         try:
             answer = resolver.query(qname, 'PTR')
-        except (resolver.NXDOMAIN, resolver.NoAnswer):
+        except (resolver.NXDOMAIN, resolver.NoAnswer, resolver.NoNameservers):
             return []
         except DNSException as e:
             self.logger.exception('Could not get PTR records for %s: %s', address, str(e))
@@ -126,7 +126,7 @@ class DNSScanModule(ScanModule):
     def _get_mx_records(self, mail_domain):
         try:
             answer = resolver.query(mail_domain, 'MX')
-        except (resolver.NXDOMAIN, resolver.NoAnswer):
+        except (resolver.NXDOMAIN, resolver.NoAnswer, resolver.NoNameservers):
             return []
         except DNSException as e:
             self.logger.exception('Could not get MX records for %s: %s', mail_domain, str(e))
