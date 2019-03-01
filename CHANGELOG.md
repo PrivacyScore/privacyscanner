@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.7.0
+-----
+
+* Fix hanging browser when alerts are shown.
+* Feature: Implement simple detection of canvas browser fingerprinting
+
 0.6.1
 -----
 
