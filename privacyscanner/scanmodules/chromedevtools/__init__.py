@@ -20,7 +20,8 @@ EXTRACTOR_CLASSES = [FinalUrlExtractor, RedirectChainExtractor, GoogleAnalyticsE
                      ImprintExtractor, HSTSPreloadExtractor]
 
 EXTRACTOR_CLASSES_HTTPS_RUN = [FinalUrlExtractor, TLSDetailsExtractor, CertificateExtractor,
-                               InsecureContentExtractor, HSTSPreloadExtractor]
+                               InsecureContentExtractor, SecurityHeadersExtractor,
+                               HSTSPreloadExtractor]
 
 
 class ChromeDevtoolsScanModule(ScanModule):
