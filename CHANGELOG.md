@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.6.0
+-----
+
+* Fix duplicate entries in the redirect.
+* Fix exception with DNS lookups for non-existing records if there are multiple
+  nameservers to be asked.
+* Feature: Implement HSTS preload checks
+
 0.5.5
 -----
 
