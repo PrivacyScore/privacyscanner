@@ -546,7 +546,8 @@ class Page:
         if self._frame_id is None:
             self._frame_id = request['extra']['frameId']
         document_changed = (request['extra']['type'] == 'Document' and
-                            request['extra']['frameId'] == self._frame_id)
+                            request['extra']['frameId'] == self._frame_id and
+                            'redirectResponse' not in request['extra'])
         if document_changed:
             self.document_request_log.append(request)
 
