@@ -362,7 +362,7 @@ class PageScanner:
 
         return content
 
-    def _cb_request_will_be_sent(self, request, requestId, redirectResponse=None, **kwargs):
+    def _cb_request_will_be_sent(self, request, requestId, **kwargs):
         # To avoid reparsing the URL in many places, we parse them all here
         request['parsed_url'] = urlparse(request['url'])
         request['requestId'] = requestId
@@ -372,8 +372,9 @@ class PageScanner:
 
         # Redirect requests don't have a received response but issue another
         # "request will be sent" event with a redirectResponse key.
-        if redirectResponse is not None:
-            self._cb_response_received(redirectResponse, requestId)
+        redirect_response = kwargs.get('redirectResponse')
+        if redirect_response is not None:
+            self._cb_response_received(redirect_response, requestId)
 
     def _cb_response_received(self, response, requestId, **kwargs):
         response['requestId'] = requestId
