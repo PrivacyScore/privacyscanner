@@ -9,7 +9,7 @@ class Extractor:
         raise NotImplementedError('You have to implement extract_information() in {}'.format(
             self.__class__.__name__))
 
-    def receive_log(self, log_type, message, call_back):
+    def receive_log(self, log_type, message, call_stack):
         pass
 
     def register_javascript(self):
