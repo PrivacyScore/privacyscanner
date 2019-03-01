@@ -396,20 +396,20 @@ class PageScanner:
         # The first script loaded is our script we set via the method
         # Page.addScriptToEvaluateOnNewDocument. We want to to attach
         # to the log function, which will be used to analyse the page.
-        if not self._debugger_attached:
+        if not self._debugger_attached.is_set():
             self._log_breakpoint = self._tab.Debugger.setBreakpoint(location={
                 'scriptId': script['scriptId'],
                 'lineNumber': ON_NEW_DOCUMENT_JAVASCRIPT_LINENO
             })['breakpointId']
-            self._debugger_attached = True
-        if self._debugger_paused:
-            self._tab.Debugger.resume()
+            if self._debugger_paused.is_set():
+                self._tab.Debugger.resume()
+            self._debugger_attached.set()
 
     def _cb_script_failed_to_parse(self, **kwargs):
         pass
 
     def _cb_paused(self, **info):
-        self._debugger_paused = True
+        self._debugger_paused.set()
         if self._log_breakpoint in info['hitBreakpoints']:
             call_frames = []
             expression = ("typeof(arguments) !== 'undefined' ? "
@@ -428,11 +428,11 @@ class PageScanner:
                     'args': args
                 })
             self._receive_log(*call_frames[0]['args'], call_frames[1:])
-        if self._debugger_attached:
+        if self._debugger_attached.is_set():
             self._tab.Debugger.resume()
 
     def _cb_resumed(self, **info):
-        self._debugger_paused = False
+        self._debugger_paused.clear()
 
     def _cb_load_event_fired(self, timestamp, **kwargs):
         self._page_loaded.set()
@@ -524,8 +524,8 @@ class PageScanner:
     def _reset(self):
         self._page_loaded.clear()
         self._document_will_change = threading.Event()
-        self._debugger_attached = False
-        self._debugger_paused = False
+        self._debugger_attached = threading.Event()
+        self._debugger_paused = threading.Event()
         self._log_breakpoint = None
         self._page = None
         self._extractors = []
