@@ -85,7 +85,7 @@ class HSTSPreloadExtractor(Extractor):
         fail_reasons = []
         if not self.result['final_url'].startswith('https://'):
             fail_reasons.append('no-https-redirect')
-        if not hsts_header['includeSubdomains']:
+        if not hsts_header['includeSubDomains']:
             fail_reasons.append('no-include-subdomains')
         if hsts_header['max_age'] is None:
             fail_reasons.append('no-max-age')
