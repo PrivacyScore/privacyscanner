@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.7.1
+-----
+
+* Fix includeSubDomains check for HSTS preloading.
+
 0.7.0
 -----
 
