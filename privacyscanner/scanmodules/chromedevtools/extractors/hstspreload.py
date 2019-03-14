@@ -87,9 +87,9 @@ class HSTSPreloadExtractor(Extractor):
             fail_reasons.append('no-https-redirect')
         if not hsts_header['includeSubDomains']:
             fail_reasons.append('no-include-subdomains')
-        if hsts_header['max_age'] is None:
+        if hsts_header['max-age'] is None:
             fail_reasons.append('no-max-age')
-        elif hsts_header['max_age'] < 31536000:
+        elif hsts_header['max-age'] < 31536000:
             fail_reasons.append('max-age-too-short')
         if not hsts_header['preload']:
             fail_reasons.append('missing-preload')
