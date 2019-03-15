@@ -74,6 +74,7 @@ class MailScanModule(ScanModule):
                 )
                 context.check_hostname = has_cas
                 context.verify_mode = ssl.CERT_REQUIRED if has_cas else ssl.CERT_NONE
+                context.set_ciphers('ALL@SECLEVEL=0')
                 try:
                     conn.starttls(context=context)
                     is_trusted = True if has_cas else None
