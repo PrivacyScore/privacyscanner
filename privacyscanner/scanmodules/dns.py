@@ -47,7 +47,10 @@ class DNSScanModule(ScanModule):
 
         # Create a list for which we fetch A/AAAA records
         domain_list = {mail_domain}
-        domain_list.update(parse_domain(url).fqdn for url in result['redirect_chain'])
+        # If the site is not reachable, we do not have a redirect chain.
+        # Nonetheless, we try to get as much information as possible without it.
+        if 'redirect_chain' in result:
+            domain_list.update(parse_domain(url).fqdn for url in result['redirect_chain'])
         if mx_records is not None:
             domain_list.update(record['host'] for record in mx_records)
 
