@@ -91,7 +91,7 @@ class DNSScanModule(ScanModule):
         reader = self._get_geoip_reader()
         try:
             answer = resolver.query(qname, rdtype)
-        except (resolver.NXDOMAIN, resolver.NoAnswer):
+        except (resolver.NXDOMAIN, resolver.NoAnswer, resolver.NoNameservers):
             return []
         except DNSException as e:
             self.logger.exception('Could not get %(rdtype) records for %(qname)s: %(msg)s',
