@@ -137,6 +137,40 @@ ON_NEW_DOCUMENT_JAVASCRIPT = """
 })();
 """.lstrip()
 
+EXTRACT_ARGUMENTS_JAVASCRIPT = '''
+(function(logArguments) {
+    let retval = 'null';
+    if (logArguments !== null) {
+        let duplicateReferences = [];
+        // JSON cannot handle arbitrary data structures, especially not those
+        // with circular references. Therefore we use a custom handler, that,
+        // first, remember serialized objects, second, stringifies an object
+        // if possible and dropping it if it is not.
+        retval = JSON.stringify(logArguments, function(key, value) {
+            if (typeof(value) === 'object' && value !== null) {
+                if (duplicateReferences.indexOf(value) !== -1) {
+                    try {
+                        // This is a very ugly hack here. When we have a
+                        // duplicate reference, we have to check if it is
+                        // really a duplicate reference or only the same value
+                        // occurring twice. Therefore, we try to JSON.stringify
+                        // it without custom handler. If it throws an exception,
+                        // it is indeed circular and we drop it.
+                        JSON.stringify(value)
+                    } catch (e) {
+                        return;
+                    }
+                } else {
+                    duplicateReferences.push(value);
+                }
+            }
+            return value;
+        });
+    }
+    return retval;
+})(typeof(arguments) !== 'undefined' ? Array.from(arguments) : null);
+'''.lstrip()
+
 # See comments in ON_NEW_DOCUMENT_JAVASCRIPT
 ON_NEW_DOCUMENT_JAVASCRIPT_LINENO = 7
 
@@ -412,12 +446,10 @@ class PageScanner:
         self._debugger_paused.set()
         if self._log_breakpoint in info['hitBreakpoints']:
             call_frames = []
-            expression = ("typeof(arguments) !== 'undefined' ? "
-                          "JSON.stringify(Array.from(arguments)) : 'null';")
             for call_frame in info['callFrames']:
                 args = json.loads(self._tab.Debugger.evaluateOnCallFrame(
                     callFrameId=call_frame['callFrameId'],
-                    expression=expression)['result']['value'])
+                    expression=EXTRACT_ARGUMENTS_JAVASCRIPT)['result']['value'])
                 call_frames.append({
                     'url': call_frame['url'],
                     'functionName': call_frame['functionName'],
