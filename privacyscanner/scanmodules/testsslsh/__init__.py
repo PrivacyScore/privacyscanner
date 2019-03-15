@@ -17,7 +17,7 @@ class TestsslshHttpsScanModule(TestsslshScanModuleBase):
         return host_url
 
     def _can_run(self, result):
-        return result['https']['has_tls']
+        return 'https' in result and result['https']['has_tls']
 
 
 class TestsslshMailScanModule(TestsslshScanModuleBase):
@@ -35,4 +35,4 @@ class TestsslshMailScanModule(TestsslshScanModuleBase):
         # If the mail host is reachable, but we could not successfully
         # perform an EHLO to switch to STARTTLS later on, we skip
         # scanning too.
-        return bool(result['mail'].get('has_starttls'))
+        return 'mail' in result and bool(result['mail'].get('has_starttls'))
