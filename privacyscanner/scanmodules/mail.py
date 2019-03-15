@@ -104,6 +104,8 @@ class MailScanModule(ScanModule):
             mail['error'] = 'other'
         except socket.timeout:
             mail['error'] = 'socket_timeout'
+        except socket.gaierror:
+            mail['error'] = 'socket_addressinfo'
         finally:
             # We only close the connection if we are actually connected
             # (yes, this how smtplib checks for this)
