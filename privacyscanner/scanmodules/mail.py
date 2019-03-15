@@ -33,6 +33,10 @@ class MailScanModule(ScanModule):
         super().__init__(options)
 
     def scan_site(self, result, meta):
+        # We did not find a MX record or an A record for the domain
+        if 'mail' not in result:
+            return
+
         mail = result['mail']
         try:
             # MX records are ordered by priority (most preferred first)
