@@ -102,6 +102,8 @@ class MailScanModule(ScanModule):
             mail['error'] = 'EHLO'
         except smtplib.SMTPException:
             mail['error'] = 'other'
+        except ConnectionRefusedError:
+            mail['error'] = 'connection_refused'
         except socket.timeout:
             mail['error'] = 'socket_timeout'
         except socket.gaierror:
