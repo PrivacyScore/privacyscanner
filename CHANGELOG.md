@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.7.2
+-----
+
+* Fix: More robust serialization of arguments to the log Javascript function.
+  This fixes fingeprinting detection with call stacks containing circular
+  references in the function arguments.
+* Fix: Set OpenSSL security level to 0. This will fix some exceptions that
+  OpenSSL will raise for weak configurations of the server, e.g. small DH key.
+* Fix max-age check for HSTS preloading
+
 0.7.1
 -----
 
