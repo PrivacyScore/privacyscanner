@@ -5,6 +5,7 @@ import fcntl
 import re
 import time
 from base64 import b32encode
+from contextlib import suppress
 from urllib.request import Request, urlopen
 
 import psutil
@@ -103,25 +104,30 @@ def kill_everything(pid, timeout=3, only_children=False):
     procs = psutil.Process(pid).children()
     # Suspend first before sending SIGTERM to avoid thundering herd problems
     for p in procs:
-        p.suspend()
+        with suppress(psutil.NoSuchProcess):
+            p.suspend()
     # Be nice. Ask them first to terminate, before we kill them.
     for p in procs:
-        p.terminate()
+        with suppress(psutil.NoSuchProcess):
+            p.terminate()
     # This delivers the SIGTERM right after resuming, so no chance to
     # terminate by broken pipes etc. first.
     for p in procs:
-        p.resume()
+        with suppress(psutil.NoSuchProcess):
+            p.resume()
     gone, alive = psutil.wait_procs(procs, timeout=timeout)
     # They are still alive. Kill'em all. No mercy anymore.
     if alive:
         for p in alive:
-            p.kill()
+            with suppress(psutil.NoSuchProcess):
+                p.kill()
         psutil.wait_procs(alive, timeout=timeout)
     if not only_children:
         # Time for pid to go ...
-        p = psutil.Process(pid)
-        p.terminate()
-        p.wait(timeout)
-        if p.is_running():
-            p.kill()
+        with suppress(psutil.NoSuchProcess):
+            p = psutil.Process(pid)
+            p.terminate()
             p.wait(timeout)
+            if p.is_running():
+                p.kill()
+                p.wait(timeout)
