@@ -63,7 +63,11 @@ class DNSScanModule(ScanModule):
 
         dns.setdefault(mail_domain, {})['MX'] = mx_records
 
-        result['mail'] = {'domain': mail_domain}
+        # If there is neither an A/AAAA record nor an MX record it makes no
+        # sense to add a mail domain because there will be no mailserver.
+        mail_dns = dns[mail_domain]
+        if mail_dns['A'] or mail_dns['AAAA'] or mail_dns['MX']:
+            result['mail'] = {'domain': mail_domain}
         result['dns'] = dns
 
     def update_dependencies(self):
