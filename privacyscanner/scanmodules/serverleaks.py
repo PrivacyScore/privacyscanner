@@ -15,7 +15,7 @@ from privacyscanner.scanmodules import ScanModule
 class ServerleaksScanModule(ScanModule):
     name = 'serverleak'
     dependencies = ['chromedevtools']
-    required_keys = ['final_url']
+    required_keys = ['final_url', 'reachable']
 
     def scan_site(self, result, meta):
         scan_site(result, self.logger, self.options, meta)
@@ -234,7 +234,11 @@ def _check_leaks(url, max_workers):
 
     return leaks
 
+
 def scan_site(result, logger, options, meta):
+    if not result['reachable']:
+        return
+
     max_workers = options.get('max_workers', 8)
 
     # Note: This does not scan the original site_url before redirection.
