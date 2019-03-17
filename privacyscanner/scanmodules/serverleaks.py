@@ -13,7 +13,7 @@ from privacyscanner.scanmodules import ScanModule
 
 
 class ServerleaksScanModule(ScanModule):
-    name = 'serverleak'
+    name = 'serverleaks'
     dependencies = ['chromedevtools']
     required_keys = ['final_url', 'reachable']
 
