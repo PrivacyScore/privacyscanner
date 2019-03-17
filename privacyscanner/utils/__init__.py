@@ -127,7 +127,9 @@ def kill_everything(pid, timeout=3, only_children=False):
         with suppress(psutil.NoSuchProcess):
             p = psutil.Process(pid)
             p.terminate()
-            p.wait(timeout)
+            with suppress(psutil.TimeoutExpired):
+                p.wait(timeout)
             if p.is_running():
                 p.kill()
-                p.wait(timeout)
+                with suppress(psutil.TimeoutExpired):
+                    p.wait(timeout)
