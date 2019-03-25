@@ -229,10 +229,15 @@ class WorkerMaster:
         self._execute_sql_autocommit(_LOG_QUERY, params)
 
     def _execute_sql_autocommit(self, query, params):
-        self._connect()
-        with self._conn.cursor() as c:
-            c.execute(query, params)
-        self._conn.commit()
+        while True:
+            try:
+                self._connect()
+                with self._conn.cursor() as c:
+                    c.execute(query, params)
+                self._conn.commit()
+            except psycopg2.OperationalError:
+                print('Database operational error. Retrying after 10 seconds.')
+                time.sleep(10)
 
     def _check_hanging(self):
         for worker_info in self._workers.values():
