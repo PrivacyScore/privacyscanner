@@ -17,3 +17,4 @@ from .screenshot import ScreenshotExtractor
 from .imprint import ImprintExtractor
 from .hstspreload import HSTSPreloadExtractor
 from .fingerprinting import FingerprintingExtractor
+from .sricheck import SriExtractor

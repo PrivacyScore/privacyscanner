@@ -9,7 +9,7 @@ from privacyscanner.scanmodules.chromedevtools.extractors import FinalUrlExtract
     TLSDetailsExtractor, CertificateExtractor, ThirdPartyExtractor, InsecureContentExtractor, \
     FailedRequestsExtractor, SecurityHeadersExtractor, TrackerDetectExtractor, \
     CookieStatsExtractor, JavaScriptLibsExtractor, ScreenshotExtractor, ImprintExtractor, \
-    GeneratorTagExtractor, HSTSPreloadExtractor, FingerprintingExtractor
+    GeneratorTagExtractor, HSTSPreloadExtractor, FingerprintingExtractor, SriExtractor
 from privacyscanner.scanmodules.chromedevtools.utils import TLDEXTRACT_CACHE_FILE, parse_domain
 from privacyscanner.utils import file_is_outdated, set_default_options, calculate_jaccard_index
 
@@ -20,7 +20,7 @@ EXTRACTOR_CLASSES = [FinalUrlExtractor, RedirectChainExtractor, GoogleAnalyticsE
                      FailedRequestsExtractor, SecurityHeadersExtractor, TrackerDetectExtractor,
                      CookieStatsExtractor, JavaScriptLibsExtractor, ScreenshotExtractor,
                      ImprintExtractor, HSTSPreloadExtractor, FingerprintingExtractor,
-                     GeneratorTagExtractor]
+                     GeneratorTagExtractor, SriExtractor]
 
 EXTRACTOR_CLASSES_HTTPS_RUN = [FinalUrlExtractor, TLSDetailsExtractor, CertificateExtractor,
                                InsecureContentExtractor, SecurityHeadersExtractor,
