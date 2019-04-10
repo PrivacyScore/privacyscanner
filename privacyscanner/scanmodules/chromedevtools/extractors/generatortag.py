@@ -11,7 +11,7 @@ ELEMENT_NODE = 1
 
 class GeneratorTagExtractor(Extractor):
 
-    IMPRINT_KEYWORDS = ['generator', 'Generator']
+    GENERATOR_KEYWORDS = ['generator', 'Generator']
 
     def extract_information(self):
         tags = []
@@ -22,7 +22,7 @@ class GeneratorTagExtractor(Extractor):
         # we walk up the DOM until we find an ``meta'' element. If this element
         # has a generator tag, this is our product/version. Otherwise, we look for the
         # next search result.
-        for keyword in self.IMPRINT_KEYWORDS:
+        for keyword in self.GENERATOR_KEYWORDS:
             search = self.page.tab.DOM.performSearch(query=keyword)
             if search['resultCount'] == 0:
                 continue
