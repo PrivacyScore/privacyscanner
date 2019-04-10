@@ -12,7 +12,7 @@ class GeneratorTagExtractor(Extractor):
     GENERATOR_KEYWORDS = ['generator', 'Generator']
 
     def extract_information(self):
-        # Disable scripts to avoid DOM changes while searching for generator tags, see imprint.py / merge request
+        # Disable scripts to avoid DOM changes while searching for generator tags, see imprint.py / pull request
         with scripts_disabled(self.page.tab, self.options):
             self._extract_information()
 
