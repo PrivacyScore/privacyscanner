@@ -1,9 +1,7 @@
-import warnings
-from urllib.parse import urlparse
-
 import pychrome
 
 from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
+from privacyscanner.scanmodules.chromedevtools.utils import scripts_disabled
 
 
 ELEMENT_NODE = 1
@@ -14,9 +12,12 @@ class GeneratorTagExtractor(Extractor):
     GENERATOR_KEYWORDS = ['generator', 'Generator']
 
     def extract_information(self):
+        # Disable scripts to avoid DOM changes while searching for generator tags, see imprint.py / merge request
+        with scripts_disabled(self.page.tab, self.options):
+            self._extract_information()
+
+    def extract_information(self):
         tags = []
-        node_id = self.page.tab.DOM.getDocument()['root']['nodeId']
-        meta_tags = self.page.tab.DOM.querySelectorAll(nodeId=node_id, selector='meta')['nodeIds']
 
         # Use the browsers search to search for the keywords. For each result,
         # we walk up the DOM until we find an ``meta'' element. If this element
@@ -41,27 +42,21 @@ class GeneratorTagExtractor(Extractor):
                         break
                     node_id = node.get('parentId')
 
-        tags=uniquify(tags)
-        generator_tags={}
+        tags = uniquify(tags)
+        generator_tags = {}
         if tags:
-            i=0
+            i = 0
             for element in tags:
                 generator_tags[str(i + 1)] = tags[i]
-                i+=1
+                i += 1
             self.result['generator'] = generator_tags
         else:
-            self.result['generator']= None
-
+            self.result['generator'] = None
 
 
 def uniquify(list: dict) -> dict:
-    checked=[]
+    checked = []
     for element in list:
         if element not in checked:
             checked.append(element)
     return checked
-
-
-
-
-
