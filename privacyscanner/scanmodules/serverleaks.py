@@ -23,27 +23,18 @@ class ServerleaksScanModule(ScanModule):
 
 def _match_db_dump(content):
     targets = ["SQLite", "CREATE TABLE", "INSERT INTO", "DROP TABLE"]
-    matched = False
-    for target in targets:
-        matched |= target in content
-    return matched
+    return any(target in content for target in targets)
 
 
 def _match_env_file(content):
     targets = ["TERM", "PATH", "COMPOSER", "INSTALL"]
-    matched = False
-    for target in targets:
-        matched |= target in content
-    return matched
+    return any(target in content for target in targets)
 
 
 def _match_package_file(content):
     targets = ["name", "author", "contributors", "bugs", "homepage", "version", "license", "keywords", "description",
                "repository", "main", "private", "scripts", "dependencies", "devDependencies", "engines", "browserslist"]
-    matched = False
-    for target in targets:
-        matched |= target in content
-    return matched
+    return any(target in content for target in targets)
 
 
 def _concat_sub(url, suffix):
