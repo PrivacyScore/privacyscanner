@@ -21,13 +21,13 @@ class ServerleaksScanModule(ScanModule):
         scan_site(result, self.logger, self.options, meta)
 
 
-
 def _match_db_dump(content):
     targets = ["SQLite", "CREATE TABLE", "INSERT INTO", "DROP TABLE"]
     matched = False
     for target in targets:
         matched |= target in content
     return matched
+
 
 def _match_env_file(content):
     targets = ["TERM", "PATH", "COMPOSER", "INSTALL"]
@@ -44,6 +44,7 @@ def _match_package_file(content):
     for target in targets:
         matched |= target in content
     return matched
+
 
 def _concat_sub(url, suffix):
     url_extract = extract(url)
@@ -120,7 +121,7 @@ TRIALS = [
     ('.DS_Store', 'Bud1'),
     ('.npmrc', '='),
     ('package.json', _match_package_file),
-     #('.htaccess', 'unknown'),
+    # ('.htaccess', 'unknown'),
     ('workspace.xml', 'FileEditorManager'),
     ('.gitlab-ci.yml', 'job'),
     # Check for Database dumps
