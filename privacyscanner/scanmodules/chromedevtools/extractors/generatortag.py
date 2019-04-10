@@ -54,7 +54,7 @@ class GeneratorTagExtractor(Extractor):
             self.result['generator'] = None
 
 
-def uniquify(list: dict) -> dict:
+def uniquify(list: list) -> list:
     checked = []
     for element in list:
         if element not in checked:
