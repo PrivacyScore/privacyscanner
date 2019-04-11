@@ -1,12 +1,19 @@
 import pychrome
 
 from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
+from privacyscanner.scanmodules.chromedevtools.utils import scripts_disabled
 
 ELEMENT_NODE = 3
 
 
 class SriExtractor(Extractor):
+
     def extract_information(self):
+        # Disable scripts to avoid DOM changes while searching for generator tags, see imprint.py / pull request
+        with scripts_disabled(self.page.tab, self.options):
+            self.extract_sri()
+
+    def extract_sri(self):
         integrity_elements = []
         requests = self.page.request_log
 
@@ -34,7 +41,7 @@ class SriExtractor(Extractor):
                                 print(node['nodeValue'])
                                 break
                         node_id = node.get('parentId')
-
+        # %TODO values may be in attributes -> implement
         for element in integrity_elements:
             # dict of href, bool if integrity, integrity hash
             value_parts = element.split()
@@ -53,10 +60,9 @@ class SriExtractor(Extractor):
                 final_sri_list.append(new_entry)
 
         # in here for debugging
-        requests2 = self.page.document_request_log
         failed_requests = self.page.failed_request_log
         security = self.page.security_state_log
+        requests2 = self.page.document_request_log
 
         # not active to not put useless results in json
         # self.result['sri-fail'] = requests
-
