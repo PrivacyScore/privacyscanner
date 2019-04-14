@@ -49,20 +49,32 @@ class SriExtractor(Extractor):
             new_entry['href'] = None
             new_entry['integrity_active'] = False
             new_entry['integrity_hash'] = None
+            new_entry['integrity_valid'] = None
             for element in value_parts:
                 if 'href=' in element:
                     new_entry['href'] = element.split('"')[1]
                 if 'integrity' in element:
                     new_entry['integrity_active'] = True
                     new_entry['integrity_hash'] = element.split('"')[1]
-                # own SHA check?
             if new_entry not in final_sri_list:
                 final_sri_list.append(new_entry)
 
-        # in here for debugging
-        failed_requests = self.page.failed_request_log
-        security = self.page.security_state_log
-        requests2 = self.page.document_request_log
+        logging_log = self.page.logging_log
+        failed_urls=[]
+        for element in logging_log:
+            if element['entry']['source'] == 'security' and element['entry']['level'] == 'error':
+                if 'Failed to find a valid digest' in element['entry']['text']:
+                    failed_urls.append(element['entry']['text'].split('\'')[3])
+        for element in final_sri_list:
+            for furl in failed_urls:
+                if '/'+element['href'] in furl:
+                    element['integrity_valid'] = False
+                elif element['integrity_active']:
+                    element['integrity_valid'] = True
+                else:
+                    element['integrity_valid'] = None
+
+
 
         # not active to not put useless results in json
         # self.result['sri-fail'] = requests
