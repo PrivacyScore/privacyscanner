@@ -18,6 +18,7 @@ class SriExtractor(Extractor):
         requests = self.page.request_log
 
         final_sri_list = []
+        failed_urls = []
 
         for request in requests:
             searchterm = request['url'].rsplit('/', 1)[1]
@@ -35,46 +36,59 @@ class SriExtractor(Extractor):
                             # For some reason, nodes seem to disappear in-between,
                             # so just ignore these cases.
                             break
-                        if node['nodeType'] == ELEMENT_NODE and node['nodeName'].lower() == '#text':
-                            if "stylesheet" in node['nodeValue']:
-                                integrity_elements.append(node['nodeValue'])
-                                print(node['nodeValue'])
+  #                      if node['nodeType'] == ELEMENT_NODE and node['nodeName'].lower() == '#text':
+   #                         if "stylesheet" in node['nodeValue']:
+    #                            self.add_element_to_linklist(final_sri_list, node['nodeValue'], None)
+     #                           # print(node['nodeValue'])
+      #                          break
+                        if node['nodeType'] == 1 and 'href' in node['attributes']:
+                            if "stylesheet" in node['attributes']:
+                                self.add_element_to_linklist(final_sri_list, None, node['attributes'])
+                                break
+                        if node['nodeType'] == 1 and 'href' in node['attributes']:
+                            if "script" in node['attributes']:
+                                print('SCRIPT FOUND')
+                                self.add_element_to_linklist(final_sri_list, None, node['attributes'])
                                 break
                         node_id = node.get('parentId')
-        # %TODO values may be in attributes -> implement
-        for element in integrity_elements:
-            # dict of href, bool if integrity, integrity hash
-            value_parts = element.split()
-            new_entry = {}
-            new_entry['href'] = None
-            new_entry['integrity_active'] = False
-            new_entry['integrity_hash'] = None
-            new_entry['integrity_valid'] = None
-            for element in value_parts:
-                if 'href=' in element:
-                    new_entry['href'] = element.split('"')[1]
-                if 'integrity' in element:
-                    new_entry['integrity_active'] = True
-                    new_entry['integrity_hash'] = element.split('"')[1]
-            if new_entry not in final_sri_list:
-                final_sri_list.append(new_entry)
 
         logging_log = self.page.logging_log
-        failed_urls=[]
+
+        # Check if href is in entry list, if yes set attributes accordingly.
         for element in logging_log:
             if element['entry']['source'] == 'security' and element['entry']['level'] == 'error':
                 if 'Failed to find a valid digest' in element['entry']['text']:
                     failed_urls.append(element['entry']['text'].split('\'')[3])
         for element in final_sri_list:
-            for furl in failed_urls:
-                if '/'+element['href'] in furl:
+            for final_url in failed_urls:
+                if '/' + element['href'].replace('/', '', 1) in final_url:
                     element['integrity_valid'] = False
                 elif element['integrity_active']:
                     element['integrity_valid'] = True
                 else:
                     element['integrity_valid'] = None
 
-
-
         # not active to not put useless results in json
         # self.result['sri-fail'] = requests
+
+    def add_element_to_linklist(self, final_sri_list, node_value, node_attributes):
+        global new_entry
+        new_entry = dict(href=None, type=None, integrity_active=False, integrity_hash=None, integrity_valid=None)
+        if node_value is not None:
+            value_parts = node_value.split()
+            for element in value_parts:
+                if 'href=' in element:
+                    new_entry['href'] = element.split('"')[1]
+                if 'integrity' in element:
+                    new_entry['integrity_active'] = True
+                    new_entry['integrity_hash'] = element.split('"')[1]
+
+        if node_attributes is not None:
+            new_entry['href'] = node_attributes[node_attributes.index('href')+1]
+            new_entry['type'] = node_attributes[node_attributes.index('rel') + 1]
+            if 'integrity' in node_attributes:
+                new_entry['integrity_active'] = True
+                new_entry['integrity_hash'] = node_attributes[node_attributes.index('integrity') + 1]
+
+        if new_entry not in final_sri_list:
+            final_sri_list.append(new_entry)
