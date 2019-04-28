@@ -17,8 +17,17 @@ class SriExtractor(Extractor):
         integrity_elements = []
         requests = self.page.request_log
 
+        sri_dict = {}
         final_sri_list = []
         failed_urls = []
+
+        sri_dict['sri-required-for'] = None
+
+        # Check already read CSP Values in _self
+
+        if 'require-sri-for' in self.result._result_dict['security_headers']['Content-Security-Policy']:
+            sri_dict['sri-required-for'] = self.result._result_dict['security_headers']['Content-Security-Policy'][
+                'sri-required-for'][0]
 
         for request in requests:
             searchterm = request['url'].rsplit('/', 1)[1]
@@ -36,11 +45,7 @@ class SriExtractor(Extractor):
                             # For some reason, nodes seem to disappear in-between,
                             # so just ignore these cases.
                             break
-  #                      if node['nodeType'] == ELEMENT_NODE and node['nodeName'].lower() == '#text':
-   #                         if "stylesheet" in node['nodeValue']:
-    #                            self.add_element_to_linklist(final_sri_list, node['nodeValue'], None)
-     #                           # print(node['nodeValue'])
-      #                          break
+
                         if node['nodeType'] == 1 and 'href' in node['attributes']:
                             if "stylesheet" in node['attributes']:
                                 self.add_element_to_linklist(final_sri_list, None, node['attributes'])
@@ -84,7 +89,7 @@ class SriExtractor(Extractor):
                     new_entry['integrity_hash'] = element.split('"')[1]
 
         if node_attributes is not None:
-            new_entry['href'] = node_attributes[node_attributes.index('href')+1]
+            new_entry['href'] = node_attributes[node_attributes.index('href') + 1]
             new_entry['type'] = node_attributes[node_attributes.index('rel') + 1]
             if 'integrity' in node_attributes:
                 new_entry['integrity_active'] = True
