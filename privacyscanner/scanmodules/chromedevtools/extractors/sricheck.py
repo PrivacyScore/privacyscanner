@@ -22,6 +22,7 @@ class SriExtractor(Extractor):
         failed_urls = []
 
         sri_dict['sri-required-for'] = None
+        sri_dict['all-sri-active-valid'] = False
 
         # Check already read CSP Values in _self
 
@@ -73,8 +74,10 @@ class SriExtractor(Extractor):
                 else:
                     element['integrity_valid'] = None
 
+        sri_dict['link-list'] = final_sri_list
+
         # not active to not put useless results in json
-        # self.result['sri-fail'] = requests
+        self.result['sri-fail'] = sri_dict
 
     def add_element_to_linklist(self, final_sri_list, node_value, node_attributes):
         global new_entry
