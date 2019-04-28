@@ -22,18 +22,10 @@ class SecurityHeadersExtractor(Extractor):
         security_headers['Strict-Transport-Security'] = hsts_value
 
         csp_value = None
-        sri_value_script = None
-        sri_value_style = None
         if 'content-security-policy' in headers:
             csp_value = self._parse_csp(headers['content-security-policy'])
-            if 'script' in csp_value['header_value']:
-                sri_value_script = True
-            if 'style' in csp_value['header_value']:
-                sri_value_style = True
 
         security_headers['Content-Security-Policy'] = csp_value
-        security_headers['Subresource-Integrity-Script'] = sri_value_script
-        security_headers['Subresource-Integrity-Style'] = sri_value_style
 
         xss_protection = None
         if 'x-xss-protection' in headers:
