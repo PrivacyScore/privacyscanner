@@ -36,7 +36,6 @@ class GeneratorTagExtractor(Extractor):
                         break
                 node_id = node.get('parentId')
 
-
         tags = uniquify(tags)
         generator_tags = {}
         if tags:

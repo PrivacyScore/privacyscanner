@@ -14,9 +14,8 @@ class SriExtractor(Extractor):
             self.extract_sri()
 
     def extract_sri(self):
-        integrity_elements = []
         requests = self.page.request_log
-
+        # TODO Implement sanity check for module
         sri_dict = {}
         final_sri_list = []
         failed_urls = []
