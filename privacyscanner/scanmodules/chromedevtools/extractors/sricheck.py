@@ -55,7 +55,6 @@ class SriExtractor(Extractor):
                     if "script" in node['attributes']:
                         self.add_element_to_linklist(final_sri_list, None, node['attributes'])
                         break
-                node_id = node.get('parentId')
 
         # Check if href is in entry list, if yes set attributes accordingly.
         logging_log = self.page.logging_log
