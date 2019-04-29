@@ -21,14 +21,19 @@ class SriExtractor(Extractor):
         final_sri_list = []
         failed_urls = []
 
-        sri_dict['sri-required-for'] = None
-        sri_dict['all-sri-active-valid'] = False
+        sri_dict['require-sri-for'] = None
+        sri_dict['all-sri-active-valid'] = None
 
         # Check already read CSP Values in _self
+        # Currently Chrome is configured to IGNORE require-sri-for. Only if the flag
+        # #enable-experimental-web-platform-features is enabled, it correctly throws an error if a script / style
+        # has no integrity-hash.
 
-        if 'require-sri-for' in self.result._result_dict['security_headers']['Content-Security-Policy']:
-            sri_dict['sri-required-for'] = self.result._result_dict['security_headers']['Content-Security-Policy'][
-                'sri-required-for'][0]
+        if self.result._result_dict['security_headers']['Content-Security-Policy'] is not None:
+            if 'require-sri-for' in self.result._result_dict['security_headers']['Content-Security-Policy']:
+                sri_dict['require-sri-for'] = self.result._result_dict['security_headers']['Content-Security-Policy'][
+                    'require-sri-for'][0]
+        # This results in privacyscanner reading the CSP header for SRI but chromedevtools is currently not enforcing it
 
         for request in requests:
             searchterm = request['url'].rsplit('/', 1)[1]
@@ -73,6 +78,12 @@ class SriExtractor(Extractor):
                     element['integrity_valid'] = True
                 else:
                     element['integrity_valid'] = None
+
+        # Check if all links have SRI enabled and have a valid hash
+        for element in final_sri_list:
+            if (not element['integrity_active']) or (not element['integrity_valid']):
+                sri_dict['all-sri-active-valid'] = False
+                break
 
         sri_dict['link-list'] = final_sri_list
 
