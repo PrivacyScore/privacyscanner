@@ -53,7 +53,6 @@ class SriExtractor(Extractor):
                         break
                 if node['nodeType'] == 1 and 'href' in node['attributes']:
                     if "script" in node['attributes']:
-                        print('SCRIPT FOUND')
                         self.add_element_to_linklist(final_sri_list, None, node['attributes'])
                         break
                 node_id = node.get('parentId')
