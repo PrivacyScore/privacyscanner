@@ -35,42 +35,40 @@ class SriExtractor(Extractor):
                     'require-sri-for'][0]
         # This results in privacyscanner reading the CSP header for SRI but chromedevtools is currently not enforcing it
 
-        for request in requests:
-            searchterm = request['url'].rsplit('/', 1)[1]
-            if searchterm != "":
-                search = self.page.tab.DOM.performSearch(query=searchterm)
-                if search['resultCount'] == 0:
-                    continue
-                results = self.page.tab.DOM.getSearchResults(
-                    searchId=search['searchId'], fromIndex=0, toIndex=search['resultCount'])
-                for node_id in results['nodeIds']:
-                    while node_id is not None:
-                        try:
-                            node = self.page.tab.DOM.describeNode(nodeId=node_id)['node']
-                        except pychrome.CallMethodException:
-                            # For some reason, nodes seem to disappear in-between,
-                            # so just ignore these cases.
-                            break
+        node_id = self.page.tab.DOM.getDocument()['root']['nodeId']
+        links = self.page.tab.DOM.querySelectorAll(nodeId=node_id, selector='link')['nodeIds']
 
-                        if node['nodeType'] == 1 and 'href' in node['attributes']:
-                            if "stylesheet" in node['attributes']:
-                                self.add_element_to_linklist(final_sri_list, None, node['attributes'])
-                                break
-                        if node['nodeType'] == 1 and 'href' in node['attributes']:
-                            if "script" in node['attributes']:
-                                print('SCRIPT FOUND')
-                                self.add_element_to_linklist(final_sri_list, None, node['attributes'])
-                                break
-                        node_id = node.get('parentId')
+        for node_id in links:
+            while node_id is not None:
+                try:
+                    node = self.page.tab.DOM.describeNode(nodeId=node_id)['node']
+                except pychrome.CallMethodException:
+                    # For some reason, nodes seem to disappear in-between,
+                    # so just ignore these cases.
+                    break
 
-        logging_log = self.page.logging_log
+                if node['nodeType'] == 1 and 'href' in node['attributes']:
+                    if "stylesheet" in node['attributes']:
+                        self.add_element_to_linklist(final_sri_list, None, node['attributes'])
+                        break
+                if node['nodeType'] == 1 and 'href' in node['attributes']:
+                    if "script" in node['attributes']:
+                        print('SCRIPT FOUND')
+                        self.add_element_to_linklist(final_sri_list, None, node['attributes'])
+                        break
+                node_id = node.get('parentId')
 
         # Check if href is in entry list, if yes set attributes accordingly.
+        logging_log = self.page.logging_log
         for element in logging_log:
             if element['entry']['source'] == 'security' and element['entry']['level'] == 'error':
                 if 'Failed to find a valid digest' in element['entry']['text']:
                     failed_urls.append(element['entry']['text'].split('\'')[3])
+
         for element in final_sri_list:
+            if len(failed_urls) == 0:
+                if element['integrity_active']:
+                    element['integrity_valid'] = True
             for final_url in failed_urls:
                 if '/' + element['href'].replace('/', '', 1) in final_url:
                     element['integrity_valid'] = False
@@ -87,7 +85,6 @@ class SriExtractor(Extractor):
 
         sri_dict['link-list'] = final_sri_list
 
-        # not active to not put useless results in json
         self.result['sri-fail'] = sri_dict
 
     def add_element_to_linklist(self, final_sri_list, node_value, node_attributes):
@@ -105,6 +102,8 @@ class SriExtractor(Extractor):
         if node_attributes is not None:
             new_entry['href'] = node_attributes[node_attributes.index('href') + 1]
             new_entry['type'] = node_attributes[node_attributes.index('rel') + 1]
+            if new_entry['type'] == 'preload':
+                new_entry['type'] = node_attributes[node_attributes.index('preload') + 2]
             if 'integrity' in node_attributes:
                 new_entry['integrity_active'] = True
                 new_entry['integrity_hash'] = node_attributes[node_attributes.index('integrity') + 1]
