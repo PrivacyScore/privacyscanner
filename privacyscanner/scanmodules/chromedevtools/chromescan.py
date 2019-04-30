@@ -218,7 +218,7 @@ class ChromeBrowser:
         self.browser = pychrome.Browser(url='http://127.0.0.1:{}'.format(
             self._debugging_port))
 
-        # Wait until Chrome is readylogger
+        # Wait until Chrome is ready
         max_tries = 100
         while max_tries > 0:
             try:
