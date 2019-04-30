@@ -83,7 +83,7 @@ class SriExtractor(Extractor):
 
         sri_dict['link-list'] = final_sri_list
 
-        self.result['sri-fail'] = sri_dict
+        self.result['sri-info'] = sri_dict
 
     def add_element_to_linklist(self, final_sri_list, node_value, node_attributes):
         global new_entry
