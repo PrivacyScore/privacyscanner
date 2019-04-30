@@ -28,10 +28,10 @@ class SriExtractor(Extractor):
         # #enable-experimental-web-platform-features is enabled, it correctly throws an error if a script / style
         # has no integrity-hash.
 
-        if self.result._result_dict['security_headers']['Content-Security-Policy'] is not None:
-            if 'require-sri-for' in self.result._result_dict['security_headers']['Content-Security-Policy']:
-                sri_dict['require-sri-for'] = self.result._result_dict['security_headers']['Content-Security-Policy'][
-                    'require-sri-for'][0]
+        security_headers = self.result['security_headers']
+        if security_headers['Content-Security-Policy'] is not None:
+            if 'require-sri-for' in security_headers['Content-Security-Policy']:
+                sri_dict['require-sri-for'] = security_headers['Content-Security-Policy']['require-sri-for'][0]
         # This results in privacyscanner reading the CSP header for SRI but chromedevtools is currently not enforcing it
 
         node_id = self.page.tab.DOM.getDocument()['root']['nodeId']
@@ -50,7 +50,6 @@ class SriExtractor(Extractor):
                     if "stylesheet" in node['attributes']:
                         self.add_element_to_linklist(final_sri_list, None, node['attributes'])
                         break
-                if node['nodeType'] == 1 and 'href' in node['attributes']:
                     if "script" in node['attributes']:
                         self.add_element_to_linklist(final_sri_list, None, node['attributes'])
                         break
