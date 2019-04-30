@@ -36,7 +36,7 @@ class GeneratorTagExtractor(Extractor):
                         break
                 node_id = node.get('parentId')
 
-        tags = uniquify(tags)
+        tags = list(set(tags))
         generator_tags = {}
         if tags:
             i = 0
@@ -46,11 +46,3 @@ class GeneratorTagExtractor(Extractor):
             self.result['generator'] = generator_tags
         else:
             self.result['generator'] = None
-
-
-def uniquify(list: list) -> list:
-    checked = []
-    for element in list:
-        if element not in checked:
-            checked.append(element)
-    return checked
