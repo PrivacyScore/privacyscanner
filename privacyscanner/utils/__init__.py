@@ -26,7 +26,6 @@ class NumericLock:
     def __enter__(self):
         i = 0
         while True:
-            i += 1
             try:
                 f = (self.lock_dir / ('%d.lock' % i)).open('wb')
                 fcntl.lockf(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -34,6 +33,7 @@ class NumericLock:
                 return i
             except OSError as e:
                 if e.errno in (errno.EACCES, errno.EAGAIN):
+                    i += 1
                     continue
                 raise
 
