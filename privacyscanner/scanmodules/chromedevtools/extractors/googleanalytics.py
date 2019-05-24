@@ -110,4 +110,4 @@ class GoogleAnalyticsExtractor(Extractor):
         ga_domains = ('www.google-analytics.com', 'ssl.google-analytics.com',
                       'stats.g.doubleclick.net')
         if parsed_url.netloc in ga_domains:
-            return any(p in parsed_url.path for p in ('collect', 'utm.gif', 'gtm/js'))
+            return any(p in parsed_url.path for p in ('collect', 'utm.gif'))
