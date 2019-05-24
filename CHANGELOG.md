@@ -1,6 +1,18 @@
 Changelog
 =========
 
+0.7.3
+-----
+
+* Fix: Check for \_\_utm.gif in Google Analytics check instead of utm.gif
+* Fix: Do not consider gtm/js requests as tracking requests for Google
+       Analytics, since they just load the GTM configuration. This fixes
+       a bug where a site is mistakenly detected as not using the anonymize IP
+       extension.
+* Start counter for numeric locks at zero instead of one. This makes the
+  remote debugging ports for Google Chrome used by the "scan" command
+  consistent with those used the "run\_workers" command.
+
 0.7.2
 -----
 
