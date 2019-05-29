@@ -66,10 +66,8 @@ class GoogleAnalyticsExtractor(Extractor):
         num_requests_no_aip = 0
         has_ga_requests = False
         for request in self.page.request_log:
-            parsed_url = request['parsed_url']
-            if self._is_google_request(parsed_url):
-                qs = parse_qs(parsed_url.query)
-                if 'aip' in qs and qs['aip'][-1] in ('1', 'true'):
+            if self._is_google_request(request['parsed_url']):
+                if self._is_anonymized(request):
                     num_requests_aip += 1
                 else:
                     num_requests_no_aip += 1
@@ -111,3 +109,19 @@ class GoogleAnalyticsExtractor(Extractor):
                       'stats.g.doubleclick.net')
         if parsed_url.netloc in ga_domains:
             return any(p in parsed_url.path for p in ('collect', '__utm.gif'))
+
+    @staticmethod
+    def _is_anonymized(request):
+        # There could be conflicting aip options, e.g., when a POST request
+        # contains aip=0 in their post data, but aip=1 in the URL.
+        # In this case, post data takes precedence.
+        aip = None
+        if request['method'] == 'POST' and request['post_data']:
+            qs = parse_qs(request['post_data'])
+            aip = qs.get('aip')
+        if aip is None:
+            qs = parse_qs(request['parsed_url'].query)
+            aip = qs.get('aip')
+        if aip[-1] in ('1', 'true'):
+            return True
+        return False
