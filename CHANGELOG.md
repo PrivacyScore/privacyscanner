@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.7.4
+-----
+
+* Fix: Also look into POST data for Google Analytics request to find aip=1
+
 0.7.3
 -----
 
