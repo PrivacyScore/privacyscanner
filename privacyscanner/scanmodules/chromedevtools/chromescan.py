@@ -409,6 +409,16 @@ class PageScanner:
         request['requestId'] = requestId
         request['document_url'] = kwargs.get('documentURL')
         request['extra'] = kwargs
+        if request.get('hasPostData', False):
+            if 'postData' in request:
+                request['post_data'] = request['postData']
+            else:
+                post_data = self._tab.Network.getRequestPostData(requestId=requestId)
+                # To avoid a too high memory usage by single requests
+                # we just store the first 64 KiB of the post data
+                request['post_data'] = post_data[:65536]
+        else:
+            request['post_data'] = None
         self._page.add_request(request)
 
         # Redirect requests don't have a received response but issue another
