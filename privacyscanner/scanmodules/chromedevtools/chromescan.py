@@ -416,7 +416,7 @@ class PageScanner:
                 post_data = self._tab.Network.getRequestPostData(requestId=requestId)
                 # To avoid a too high memory usage by single requests
                 # we just store the first 64 KiB of the post data
-                request['post_data'] = post_data[:65536]
+                request['post_data'] = post_data['postData'][:65536]
         else:
             request['post_data'] = None
         self._page.add_request(request)
