@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.7.5
+-----
+
+* Fix: POST data extraction failed under certain circumstances.
+
 0.7.4
 -----
 
