@@ -122,6 +122,6 @@ class GoogleAnalyticsExtractor(Extractor):
         if aip is None:
             qs = parse_qs(request['parsed_url'].query)
             aip = qs.get('aip')
-        if aip[-1] in ('1', 'true'):
+        if aip and aip[-1] in ('1', 'true'):
             return True
         return False
