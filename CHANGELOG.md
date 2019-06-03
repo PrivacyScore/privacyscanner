@@ -1,6 +1,13 @@
 Changelog
 =========
 
+0.7.6
+-----
+
+* Fix: run\_workers command will no longer run into an infinite loop.
+* Fix: Google Analytics detection did not handle the case when aip is not
+       set correctly.
+
 0.7.5
 -----
 
