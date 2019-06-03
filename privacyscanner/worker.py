@@ -235,6 +235,7 @@ class WorkerMaster:
                 with self._conn.cursor() as c:
                     c.execute(query, params)
                 self._conn.commit()
+                break
             except psycopg2.OperationalError:
                 print('Database operational error. Retrying after 10 seconds.')
                 time.sleep(10)
