@@ -472,7 +472,7 @@ class PageScanner:
                 else:
                     # TODO: We should look for the error here and handle those
                     #       cases to reliably extract the arguments.
-                    args = []
+                    args = ['error', None]
                 call_frames.append({
                     'url': call_frame['url'],
                     'functionName': call_frame['functionName'],
