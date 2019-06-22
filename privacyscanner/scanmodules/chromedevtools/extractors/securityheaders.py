@@ -57,7 +57,7 @@ class SecurityHeadersExtractor(Extractor):
                 try:
                     max_age = int(max_age)
                 except ValueError:
-                    pass
+                    max_age = None
                 break
         return {
             'header_value': header_value,
