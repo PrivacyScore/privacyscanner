@@ -374,9 +374,14 @@ class PageScanner:
                     raise NotReachableError('No stable page to scan.')
 
             response = self._page.final_response
-            res = self._tab.Page.getResourceContent(frameId=response['extra']['frameId'],
-                                                    url=response['url'])
-            content = b64decode(res['content']) if res['base64Encoded'] else res['content'].encode()
+            # If there is no frameId, there is no content that was rendered.
+            # This is usually the case, when the site has a redirect.
+            if 'frameId' in response['extra']:
+                res = self._tab.Page.getResourceContent(frameId=response['extra']['frameId'],
+                                                        url=response['url'])
+                content = b64decode(res['content']) if res['base64Encoded'] else res['content'].encode()
+            else:
+                content = b''
         else:
             self._tab.stop()
             browser.close_tab(self._tab)
