@@ -137,6 +137,8 @@ ON_NEW_DOCUMENT_JAVASCRIPT = """
 })();
 """.lstrip()
 
+# TODO: There are still some contexts in which this JavaScript snippet does not
+#       run properly. This requires more research.
 EXTRACT_ARGUMENTS_JAVASCRIPT = '''
 (function(logArguments) {
     let retval = 'null';
@@ -462,9 +464,15 @@ class PageScanner:
         if self._log_breakpoint in info['hitBreakpoints']:
             call_frames = []
             for call_frame in info['callFrames']:
-                args = json.loads(self._tab.Debugger.evaluateOnCallFrame(
+                javascript_result = self._tab.Debugger.evaluateOnCallFrame(
                     callFrameId=call_frame['callFrameId'],
-                    expression=EXTRACT_ARGUMENTS_JAVASCRIPT)['result']['value'])
+                    expression=EXTRACT_ARGUMENTS_JAVASCRIPT)['result']
+                if 'value' in javascript_result:
+                    args = json.loads(javascript_result['value'])
+                else:
+                    # TODO: We should look for the error here and handle those
+                    #       cases to reliably extract the arguments.
+                    args = []
                 call_frames.append({
                     'url': call_frame['url'],
                     'functionName': call_frame['functionName'],
