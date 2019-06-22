@@ -19,6 +19,9 @@ from privacyscanner.exceptions import RetryScan
 from privacyscanner.scanmodules.chromedevtools.utils import scripts_disabled
 from privacyscanner.utils import kill_everything
 
+
+CHANGE_WAIT_TIME = 15
+
 # See https://github.com/GoogleChrome/chrome-launcher/blob/master/docs/chrome-flags-for-tools.md
 # See also https://peter.sh/experiments/chromium-command-line-switches/
 CHROME_OPTIONS = [
@@ -351,10 +354,10 @@ class PageScanner:
                 # because page_loaded event is already set.
                 self._page_loaded.wait(load_max_wait)
                 self._page_interaction()
-                # We wait 5 seconds after the page has loaded, so that any
+                # We wait 15 seconds after the page has loaded, so that any
                 # resources can load. This includes JavaScript which might
                 # issue further requests.
-                if not self._document_will_change.wait(5):
+                if not self._document_will_change.wait(CHANGE_WAIT_TIME):
                     # OK, our page should be stable now. So we will disable any
                     # further requests by just intercepting them and not
                     # taking care of them.
