@@ -5,7 +5,6 @@ class CookieSyncExtractor(Extractor):
 
     def extract_information(self):
         cookies_synced = {'cookie_sync_occured': None, 'sync_occurence_counter': 0, 'sync_relation': []}
-
         tracker_requests = []
         tracker_cookies = []
 
@@ -26,6 +25,7 @@ class CookieSyncExtractor(Extractor):
                     if cookie['value'] in request['url']:
                         cookie_domain = cookie['domain'].split('.')[len(cookie['domain'].split('.'))-2]
                         if cookie_domain not in request['url']:
+
                             try:
                                 t_url = request['url'].split('/')[2]
                                 d_name = t_url.split('.')
@@ -48,15 +48,15 @@ class CookieSyncExtractor(Extractor):
                                         strikeout_subcount += 1
                                     if origin_company_name in element['cookie_sync_origin']:
                                         strikeout_subcount += 1
-                                    # if cookie['domain'] in element['cookie_sync_origin']:
-                                    #     strikeout_subcount += 1
                                     if strikeout_subcount > 1:
                                         strikeout_count = 1
+
                             if strikeout_count == 0:
                                 cookies_synced['cookie_sync_occured'] = True
                                 cookies_synced['sync_relation'].append({'cookie_sync_origin': cookie['domain'],
                                                                         'cookie_sync_target': request['url'],
                                                                         'cookie_sync_value': cookie['value']})
+
         if cookies_synced['cookie_sync_occured'] is None:
             cookies_synced['cookie_sync_occured'] = False
 
