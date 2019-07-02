@@ -1,4 +1,6 @@
 from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
+from datetime import datetime
+from datetime import date
 
 
 class CookieSyncExtractor(Extractor):
@@ -21,7 +23,7 @@ class CookieSyncExtractor(Extractor):
 
         for cookie in tracker_cookies:
             for request in tracker_requests:
-                if len(cookie['value']) > 10:
+                if len(cookie['value']) > 6:
                     if cookie['value'] in request['url']:
                         cookie_domain = cookie['domain'].split('.')[len(cookie['domain'].split('.'))-2]
                         if cookie_domain not in request['url']:
@@ -54,6 +56,14 @@ class CookieSyncExtractor(Extractor):
                                         strikeout_subcount += 1
                                     if strikeout_subcount > 1:
                                         strikeout_count = 1
+
+                            if len(cookie['value']) == 10:
+                                try:
+                                    dateval = datetime.utcfromtimestamp(int(cookie['value'])).strftime('%Y-%m-%d %H:%M:%S')
+                                except ValueError:
+                                    strikeout_count += 0
+                                if str(date.today()).split(' ')[0] in dateval:
+                                    strikeout_count += 1
 
                             if strikeout_count == 0:
                                 cookies_synced['cookie_sync_occured'] = True
