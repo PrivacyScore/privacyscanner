@@ -30,7 +30,8 @@ class CookieSyncExtractor(Extractor):
             for request in tracker_requests:
                 if len(cookie['value']) > 10:
                     if cookie['value'] in request['url']:
-                        if not cookie['domain'] in request['url']:
+                        cookie_domain = cookie['domain'].split('.')[len(cookie['domain'].split('.'))-2]
+                        if cookie_domain not in request['url']:
                             try:
                                 t_url = request['url'].split('/')[2]
                                 d_name = t_url.split('.')
@@ -38,13 +39,16 @@ class CookieSyncExtractor(Extractor):
                             except IndexError:
                                 company = request['url']
                             if len(cookies_synced) > 0:
-                                domaincounter = 0
+                                strikeout_count = 0
                                 for element in cookies_synced['sync_relation']:
+                                    strikeout_subcount = 0
                                     if company in element['cookie_sync_target']:
-                                        domaincounter += 1
+                                        strikeout_subcount += 1
                                     if cookie['domain'] in element['cookie_sync_origin']:
-                                        domaincounter += 1
-                            if domaincounter == 0:
+                                        strikeout_subcount += 1
+                                    if strikeout_subcount > 0:
+                                        strikeout_count = 1
+                            if strikeout_count == 0:
                                 cookies_synced['cookie_sync_occured'] = True
                                 cookies_synced['sync_relation'].append({'cookie_sync_origin': cookie['domain'],
                                                                         'cookie_sync_target': request['url'],
