@@ -4,7 +4,7 @@ from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
 class CookieSyncExtractor(Extractor):
 
     def extract_information(self):
-        cookies_synced = {'cookie_sync_occured': None, 'sync_occurence_counter': 0, 'sync_relation': []}
+        cookies_synced = dict(cookie_sync_occured=None, sync_occurence_counter=0, sync_relation=[], sync_companies=[])
         tracker_requests = []
         tracker_cookies = []
 
@@ -32,11 +32,15 @@ class CookieSyncExtractor(Extractor):
                                 target_company_name = d_name[len(d_name)-2]
                             except IndexError:
                                 target_company_name = request['url']
+                            if target_company_name not in cookies_synced['sync_companies']:
+                                cookies_synced['sync_companies'].append(target_company_name)
 
                             try:
                                 origin_company_name = cookie['domain'].split('.')[len(cookie['domain'].split('.'))-2]
                             except IndexError:
                                 origin_company_name = cookie['domain']
+                            if origin_company_name not in cookies_synced['sync_companies']:
+                                cookies_synced['sync_companies'].append(origin_company_name)
 
                             strikeout_count = 0
                             if len(cookies_synced) > 0:
