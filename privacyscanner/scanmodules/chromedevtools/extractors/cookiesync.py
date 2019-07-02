@@ -29,18 +29,28 @@ class CookieSyncExtractor(Extractor):
                             try:
                                 t_url = request['url'].split('/')[2]
                                 d_name = t_url.split('.')
-                                company = d_name[len(d_name)-2]
+                                target_company_name = d_name[len(d_name)-2]
                             except IndexError:
-                                company = request['url']
+                                target_company_name = request['url']
+
+                            try:
+                                origin_company_name = cookie['domain'].split('.')[len(cookie['domain'].split('.'))-2]
+                            except IndexError:
+                                origin_company_name = cookie['domain']
+
                             strikeout_count = 0
                             if len(cookies_synced) > 0:
                                 for element in cookies_synced['sync_relation']:
                                     strikeout_subcount = 0
-                                    if company in element['cookie_sync_target']:
+                                    if target_company_name in element['cookie_sync_target']:
                                         strikeout_subcount += 1
-                                    if cookie['domain'] in element['cookie_sync_origin']:
+                                    if origin_company_name in element['cookie_sync_target']:
                                         strikeout_subcount += 1
-                                    if strikeout_subcount > 0:
+                                    if origin_company_name in element['cookie_sync_origin']:
+                                        strikeout_subcount += 1
+                                    # if cookie['domain'] in element['cookie_sync_origin']:
+                                    #     strikeout_subcount += 1
+                                    if strikeout_subcount > 1:
                                         strikeout_count = 1
                             if strikeout_count == 0:
                                 cookies_synced['cookie_sync_occured'] = True
