@@ -5,7 +5,7 @@ from datetime import datetime
 class CookieSyncExtractor(Extractor):
 
     def extract_information(self):
-        cookies_synced = dict(cookie_sync_occured=None, sync_occurence_counter=0, sync_relation=[], sync_companies=[])
+        cookies_synced = dict(cookie_sync_occurred=None, sync_occurence_counter=0, sync_relation=[], sync_companies=[])
         tracker_requests = []
         tracker_cookies = []
 
@@ -18,7 +18,7 @@ class CookieSyncExtractor(Extractor):
                 tracker_cookies.append(cookie)
 
         if len(tracker_cookies) == 0:
-            cookies_synced['cookie_sync_occured'] = False
+            cookies_synced['cookie_sync_occurred'] = False
 
         for cookie in tracker_cookies:
             for request in tracker_requests:
