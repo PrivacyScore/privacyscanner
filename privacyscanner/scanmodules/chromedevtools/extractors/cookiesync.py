@@ -77,6 +77,7 @@ class CookieSyncExtractor(Extractor):
 
         if cookies_synced['cookie_sync_occurred'] is None:
             cookies_synced['cookie_sync_occurred'] = False
+            cookies_synced['sync_companies'] = None
 
         cookies_synced['sync_occurrence_counter'] = len(cookies_synced['sync_relation'])
 
