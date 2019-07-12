@@ -1,6 +1,5 @@
 from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
 from datetime import datetime
-from datetime import date
 
 
 class CookieSyncExtractor(Extractor):
@@ -58,22 +57,27 @@ class CookieSyncExtractor(Extractor):
                                         strikeout_count = 1
 
                             if len(cookie['value']) == 10:
+                                possible_time_cookie = None
+                                utcstamp = None
                                 try:
-                                    dateval = datetime.utcfromtimestamp(int(cookie['value'])).strftime('%Y-%m-%d %H:%M:%S')
+                                    possible_time_cookie = datetime.utcfromtimestamp(int(cookie['value']))
+                                    utcstamp = datetime.utcnow()
                                 except ValueError:
                                     strikeout_count += 0
-                                if str(date.today()).split(' ')[0] in dateval:
-                                    strikeout_count += 1
+                                if possible_time_cookie is not None:
+                                    if possible_time_cookie.date().year == utcstamp.date().year:
+                                        if possible_time_cookie.date().month == utcstamp.date().month:
+                                            strikeout_count += 1
 
                             if strikeout_count == 0:
-                                cookies_synced['cookie_sync_occured'] = True
+                                cookies_synced['cookie_sync_occurred'] = True
                                 cookies_synced['sync_relation'].append({'cookie_sync_origin': cookie['domain'],
                                                                         'cookie_sync_target': request['url'],
                                                                         'cookie_sync_value': cookie['value']})
 
-        if cookies_synced['cookie_sync_occured'] is None:
-            cookies_synced['cookie_sync_occured'] = False
+        if cookies_synced['cookie_sync_occurred'] is None:
+            cookies_synced['cookie_sync_occurred'] = False
 
-        cookies_synced['sync_occurence_counter'] = len(cookies_synced['sync_relation'])
+        cookies_synced['sync_occurrence_counter'] = len(cookies_synced['sync_relation'])
 
         self.result['cookiesync'] = cookies_synced
