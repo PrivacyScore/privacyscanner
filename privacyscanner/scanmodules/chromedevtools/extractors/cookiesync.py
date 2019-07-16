@@ -1,10 +1,17 @@
 from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
 from datetime import datetime
+from privacyscanner.utils import download_file
+from pathlib import Path
+
+CLIQZ_DOWNLOAD_PREFIX = 'https://raw.githubusercontent.com/cliqz-oss/whotracks.me/master/whotracksme/data/assets/'
+CLIQZ_FILES = ['trackerdb.sql']
+CLIQZ_PATH = Path('cliqz')
 
 
 class CookieSyncExtractor(Extractor):
 
     def extract_information(self):
+        trackerdb = self._load_tracker_db(True)
         cookies_synced = dict(cookie_sync_occurred=None, sync_occurrence_counter=0, sync_relation=[], sync_companies=[])
         tracker_requests = []
         tracker_cookies = []
@@ -41,6 +48,10 @@ class CookieSyncExtractor(Extractor):
                             except IndexError:
                                 origin_company_name = cookie['domain']
                             if origin_company_name not in cookies_synced['sync_companies']:
+                                cookies_synced['sync_company_network'] = []
+                                for company in trackerdb:
+                                    if origin_company_name in company:
+                                        cookies_synced['sync_company_network'].append(company)
                                 cookies_synced['sync_companies'].append(origin_company_name)
 
                             strikeout_count = 0
@@ -82,3 +93,33 @@ class CookieSyncExtractor(Extractor):
         cookies_synced['sync_occurrence_counter'] = len(cookies_synced['sync_relation'])
 
         self.result['cookiesync'] = cookies_synced
+
+    @staticmethod
+    def update_dependencies(options):
+        trackerdb_path = options['storage_path'] / CLIQZ_PATH
+        trackerdb_path.mkdir(parents=True, exist_ok=True)
+        for filename in CLIQZ_FILES:
+            download_url = CLIQZ_DOWNLOAD_PREFIX + filename
+            target_file = (trackerdb_path / filename).open('wb')
+            download_file(download_url, target_file)
+
+    def _load_tracker_db(self, load_switch):
+        if load_switch:
+            trackerdb = {}
+            tracker_db_path = self.options['storage_path'] / CLIQZ_PATH / "trackerdb.sql"
+            f = open(tracker_db_path, "r")
+            sql_generator = f.readlines()
+            for line in sql_generator:
+                if 'INSERT INTO "tracker_domains"' in line:
+                    sl = line.split("'")
+                    trackerdb[sl[1]] = []
+                    trackerdb[sl[1]].append(sl[3])
+
+        if not load_switch:
+            trackerdb = {}
+
+        return trackerdb
+
+    def query_tracker_db(self, domain):
+        if domain in trackerdb:
+            print("yes")
