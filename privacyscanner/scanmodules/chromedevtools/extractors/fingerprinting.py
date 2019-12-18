@@ -79,19 +79,36 @@ instrumentObject(window.CanvasRenderingContext2D.prototype,
                  'CanvasRenderingContext2D',
                  ['fillText', 'strokeText'],
                  'fingerprinting:canvas');
+instrumentObject(window.AudioContext.prototype,
+                 'AudioContext',
+                 ['createAnalyser'],
+                 'fingerprinting:audio');
+instrumentObject(window.WebGLRenderingContext.prototype,
+                 'WebGLRenderingContext',
+                 ['readPixels', 'getParameter'],
+                 'fingerprinting:webgl');
 """
+# webgl:getExtension('WEBGL_debug_renderer_info') as an indicator?
+# java-font-enumeration?
 
 
 class FingerprintingExtractor(Extractor):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
         self._canvas = {'calls': [], 'is_fingerprinting': False}
+        self._audio = {'calls': [], 'is_fingerprinting': False}
+        self._webgl = {'calls': [], 'is_fingerprinting': False}
         self._canvas_call_stack = None
+        self._audio_call_stack = None
+        self._webgl_call_stack = None
         self._canvas_image = None
 
     def extract_information(self):
         self.result['fingerprinting'] = {
-            'canvas': self._canvas
+            'canvas': self._canvas,
+            'audio': self._audio,
+            'webgl': self._webgl
         }
         self._extract_canvas()
 
@@ -101,7 +118,10 @@ class FingerprintingExtractor(Extractor):
     def receive_log(self, log_type, message, call_stack):
         if log_type == 'fingerprinting:canvas':
             self._receive_canvas_log(message, call_stack)
-
+        if log_type == 'fingerprinting:audio':
+            self._receive_audio_log(message, call_stack)
+        if log_type == 'fingerprinting:webgl':
+            self._receive_webgl_log(message, call_stack)
     def _extract_canvas(self):
         uses_text = False
         text_methods = ('CanvasRenderingContext2D.fillText',
@@ -122,6 +142,12 @@ class FingerprintingExtractor(Extractor):
                 pass
             if content:
                 self.result.add_file('fingerprinting_canvas', content)
+        if self._audio_call_stack is not None:
+            self._audio['is_fingerprinting'] = True
+            self._audio['call_stack'] = self._audio_call_stack
+        if self._webgl_call_stack is not None:
+            self._webgl['is_fingerprinting'] = True
+            self._webgl['call_stack'] = self._webgl_call_stack
 
     def _receive_canvas_log(self, message, call_stack):
         self._canvas['calls'].append({
@@ -135,3 +161,17 @@ class FingerprintingExtractor(Extractor):
             # call stack because it provides no value.
             self._canvas_call_stack = call_stack[1:]
             self._canvas_image = message['retval']
+
+    def _receive_audio_log(self, message, call_stack):
+        self._audio['calls'].append({
+            'method': message['name'],
+            'arguments': message['arguments']
+        })
+        self._audio_call_stack = call_stack
+
+    def _receive_webgl_log(self, message, call_stack):
+        self._webgl['calls'].append({
+            'method': message['name'],
+            'arguments': message['arguments']
+        })
+        self._webgl_call_stack = call_stack
