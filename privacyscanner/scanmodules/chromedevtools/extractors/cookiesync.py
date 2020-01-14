@@ -12,7 +12,8 @@ class CookieSyncExtractor(Extractor):
 
     def extract_information(self):
         trackerdb = self._load_tracker_db(True)
-        cookies_synced = dict(cookie_sync_occurred=None, sync_occurrence_counter=0, sync_relation=[], sync_companies=[])
+        cookies_synced = dict(cookie_sync_occurred=None, sync_occurrence_counter=0, sync_relation=[], sync_domains=[],
+                              sync_company_network=[])
         tracker_requests = []
         tracker_cookies = []
 
@@ -37,22 +38,25 @@ class CookieSyncExtractor(Extractor):
                             try:
                                 t_url = request['url'].split('/')[2]
                                 d_name = t_url.split('.')
-                                target_company_name = d_name[len(d_name)-2]
+                                target_company_name = d_name[len(d_name)-2]+"."+d_name[len(d_name)-1]
                             except IndexError:
                                 target_company_name = request['url']
-                            if target_company_name not in cookies_synced['sync_companies']:
-                                cookies_synced['sync_companies'].append(target_company_name)
+                            if target_company_name not in cookies_synced['sync_domains']:
+                                cookies_synced['sync_domains'].append(target_company_name)
+                                scn = self._find_company_network(trackerdb, target_company_name)
+                                if scn is not None and scn not in cookies_synced['sync_company_network']:
+                                    cookies_synced['sync_company_network'].append(scn)
 
                             try:
-                                origin_company_name = cookie['domain'].split('.')[len(cookie['domain'].split('.'))-2]
+                                csplit = cookie['domain'].split('.')
+                                origin_company_name = csplit[len(csplit)-2]+"."+csplit[len(csplit)-1]
                             except IndexError:
                                 origin_company_name = cookie['domain']
-                            if origin_company_name not in cookies_synced['sync_companies']:
-                                cookies_synced['sync_company_network'] = []
-                                for company in trackerdb:
-                                    if origin_company_name in company:
-                                        cookies_synced['sync_company_network'].append(company)
-                                cookies_synced['sync_companies'].append(origin_company_name)
+                            if origin_company_name not in cookies_synced['sync_domains']:
+                                cookies_synced['sync_domains'].append(origin_company_name)
+                                scn = self._find_company_network(trackerdb, origin_company_name)
+                                if scn is not None and scn not in cookies_synced['sync_company_network']:
+                                    cookies_synced['sync_company_network'].append(scn)
 
                             strikeout_count = 0
                             if len(cookies_synced) > 0:
@@ -88,7 +92,7 @@ class CookieSyncExtractor(Extractor):
 
         if cookies_synced['cookie_sync_occurred'] is None:
             cookies_synced['cookie_sync_occurred'] = False
-            cookies_synced['sync_companies'] = None
+            cookies_synced['sync_domains'] = None
 
         cookies_synced['sync_occurrence_counter'] = len(cookies_synced['sync_relation'])
 
@@ -112,7 +116,8 @@ class CookieSyncExtractor(Extractor):
             for line in sql_generator:
                 if 'INSERT INTO "tracker_domains"' in line:
                     sl = line.split("'")
-                    trackerdb[sl[1]] = []
+                    if not sl[1] in trackerdb:
+                        trackerdb[sl[1]] = []
                     trackerdb[sl[1]].append(sl[3])
 
         if not load_switch:
@@ -120,6 +125,9 @@ class CookieSyncExtractor(Extractor):
 
         return trackerdb
 
-    def query_tracker_db(self, domain):
-        if domain in trackerdb:
-            print("yes")
+    def _find_company_network(self, trackerdb, domain):
+        for key in trackerdb.keys():
+            for i in range(len(trackerdb[key])):
+                if domain in trackerdb[key][i]:
+                    return key
+        return None
