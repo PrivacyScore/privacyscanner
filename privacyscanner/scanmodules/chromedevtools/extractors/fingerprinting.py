@@ -2,6 +2,9 @@ import base64
 
 from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
 
+MISC_FINGERPRINTING_THRESHOLD = 1
+# This value is the lower threshold for misc. fingerprinting attributes,
+# to lower the chance of false positives -> More calls, higher chance of fingerprinting.
 
 INSTRUMENTATION_JS = """
 function instrumentFunction(func, name, log_type) {
@@ -136,6 +139,7 @@ class FingerprintingExtractor(Extractor):
             'misc': self._misc,
         }
         self._extract_canvas()
+        self._toggle_fingerprint_bool()
 
     def register_javascript(self):
         return INSTRUMENTATION_JS
@@ -170,15 +174,14 @@ class FingerprintingExtractor(Extractor):
                 pass
             if content:
                 self.result.add_file('fingerprinting_canvas', content)
-        if self._audio_call_stack is not None:
+
+    def _toggle_fingerprint_bool(self):
+        if len(self._audio['calls']) > 0:
             self._audio['is_fingerprinting'] = True
-            self._audio['call_stack'] = self._audio_call_stack
-        if self._webgl_call_stack is not None:
+        if len(self._webgl['calls']) > 0:
             self._webgl['is_fingerprinting'] = True
-            self._webgl['call_stack'] = self._webgl_call_stack
-        if self._misc_call_stack is not None:
+        if len(self._misc['calls']) > MISC_FINGERPRINTING_THRESHOLD:
             self._misc['is_fingerprinting'] = True
-            self._misc['call_stack'] = self._misc_call_stack
 
     def _receive_canvas_log(self, message, call_stack):
         self._canvas['calls'].append({
