@@ -88,7 +88,7 @@ instrumentObject(window.WebGLRenderingContext.prototype,
                  ['readPixels', 'getParameter'],
                  'fingerprinting:webgl');
 instrumentProperty(window.Navigator.prototype,
-                 'Navigator',
+                 'userAgent',
                  ['userAgent'],
                  'fingerprinting:misc');
 """
@@ -176,22 +176,28 @@ class FingerprintingExtractor(Extractor):
             self._canvas_image = message['retval']
 
     def _receive_audio_log(self, message, call_stack):
-        self._audio['calls'].append({
+        calldict = {
             'method': message['name'],
             'arguments': message['arguments']
-        })
-        self._audio_call_stack = call_stack
+        }
+        if calldict not in self._audio['calls']:
+            self._audio['calls'].append(calldict)
+        # self._audio_call_stack = call_stack
 
     def _receive_webgl_log(self, message, call_stack):
-        self._webgl['calls'].append({
+        calldict = {
             'method': message['name'],
             'arguments': message['arguments']
-        })
-        self._webgl_call_stack = call_stack
+        }
+        if calldict not in self._webgl['calls']:
+            self._webgl['calls'].append(calldict)
+        # self._webgl_call_stack = call_stack
 
     def _receive_misc_log(self, message, call_stack):
-        self._misc['calls'].append({
-            'method': message['name'],
+        calldict = {
+            'property': message['name'],
             'value': message['value']
-        })
-        self._misc_call_stack = call_stack
+        }
+        if calldict not in self._misc['calls']:
+            self._misc['calls'].append(calldict)
+        # self._misc_call_stack = call_stack
