@@ -16,7 +16,7 @@ function instrumentFunction(func, name, log_type) {
     }
 }
 
-function instrumentProperty(obj, prop, name, log_type) {
+function instrumentProperty(obj, name, prop, log_type) {
     let prototype = obj;
     let descriptor;
     do {
@@ -87,6 +87,10 @@ instrumentObject(window.WebGLRenderingContext.prototype,
                  'WebGLRenderingContext',
                  ['readPixels', 'getParameter'],
                  'fingerprinting:webgl');
+instrumentProperty(window.Navigator.prototype,
+                 'Navigator',
+                 ['userAgent'],
+                 'fingerprinting:misc');
 """
 # webgl:getExtension('WEBGL_debug_renderer_info') as an indicator?
 # java-font-enumeration?
@@ -99,16 +103,19 @@ class FingerprintingExtractor(Extractor):
         self._canvas = {'calls': [], 'is_fingerprinting': False}
         self._audio = {'calls': [], 'is_fingerprinting': False}
         self._webgl = {'calls': [], 'is_fingerprinting': False}
+        self._misc = {'calls': [], 'is_fingerprinting': False}
         self._canvas_call_stack = None
         self._audio_call_stack = None
         self._webgl_call_stack = None
+        self._misc_call_stack = None
         self._canvas_image = None
 
     def extract_information(self):
         self.result['fingerprinting'] = {
             'canvas': self._canvas,
             'audio': self._audio,
-            'webgl': self._webgl
+            'webgl': self._webgl,
+            'misc': self._misc,
         }
         self._extract_canvas()
 
@@ -122,6 +129,9 @@ class FingerprintingExtractor(Extractor):
             self._receive_audio_log(message, call_stack)
         if log_type == 'fingerprinting:webgl':
             self._receive_webgl_log(message, call_stack)
+        if log_type == 'fingerprinting:misc':
+            self._receive_misc_log(message, call_stack)
+
     def _extract_canvas(self):
         uses_text = False
         text_methods = ('CanvasRenderingContext2D.fillText',
@@ -148,6 +158,9 @@ class FingerprintingExtractor(Extractor):
         if self._webgl_call_stack is not None:
             self._webgl['is_fingerprinting'] = True
             self._webgl['call_stack'] = self._webgl_call_stack
+        if self._misc_call_stack is not None:
+            self._misc['is_fingerprinting'] = True
+            self._misc['call_stack'] = self._misc_call_stack
 
     def _receive_canvas_log(self, message, call_stack):
         self._canvas['calls'].append({
@@ -175,3 +188,10 @@ class FingerprintingExtractor(Extractor):
             'arguments': message['arguments']
         })
         self._webgl_call_stack = call_stack
+
+    def _receive_misc_log(self, message, call_stack):
+        self._misc['calls'].append({
+            'method': message['name'],
+            'value': message['value']
+        })
+        self._misc_call_stack = call_stack
