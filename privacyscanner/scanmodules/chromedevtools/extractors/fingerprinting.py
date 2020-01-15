@@ -87,6 +87,14 @@ instrumentObject(window.WebGLRenderingContext.prototype,
                  'WebGLRenderingContext',
                  ['readPixels', 'getParameter'],
                  'fingerprinting:webgl');
+instrumentObject(localStorage,
+                 'localStorage',
+                 ['setItem', 'getItem'],
+                 'fingerprinting:misc');
+instrumentObject(sessionStorage,
+                 'sessionStorage',
+                 ['setItem', 'getItem'],
+                 'fingerprinting:misc');
 instrumentProperty(window.Navigator.prototype,
                  'userAgent',
                  ['userAgent'],
@@ -99,9 +107,11 @@ instrumentProperty(window.Navigator.prototype,
                  'languages',
                  ['languages'],
                  'fingerprinting:misc');
+instrumentProperty(window.Screen.prototype,
+                 'colorDepth',
+                 ['colorDepth'],
+                 'fingerprinting:misc');
 """
-# webgl:getExtension('WEBGL_debug_renderer_info') as an indicator?
-# java-font-enumeration?
 
 
 class FingerprintingExtractor(Extractor):
@@ -202,10 +212,17 @@ class FingerprintingExtractor(Extractor):
         # self._webgl_call_stack = call_stack
 
     def _receive_misc_log(self, message, call_stack):
-        calldict = {
-            'property': message['name'],
-            'value': message['value']
-        }
+        listofcheckedproperties = ['userAgent', 'language', 'languages', 'colorDepth']
+        if message['name'] in listofcheckedproperties:
+            calldict = {
+                'property': message['name'],
+                'value': message['value']
+            }
+        elif 'arguments' in message.keys():
+            calldict = {
+                'method': message['name'],
+                'arguments': message['arguments']
+            }
         if calldict not in self._misc['calls']:
             self._misc['calls'].append(calldict)
         # self._misc_call_stack = call_stack
