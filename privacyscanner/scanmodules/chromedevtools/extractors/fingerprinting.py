@@ -91,6 +91,14 @@ instrumentProperty(window.Navigator.prototype,
                  'userAgent',
                  ['userAgent'],
                  'fingerprinting:misc');
+instrumentProperty(window.Navigator.prototype,
+                 'language',
+                 ['language'],
+                 'fingerprinting:misc');
+instrumentProperty(window.Navigator.prototype,
+                 'languages',
+                 ['languages'],
+                 'fingerprinting:misc');
 """
 # webgl:getExtension('WEBGL_debug_renderer_info') as an indicator?
 # java-font-enumeration?
