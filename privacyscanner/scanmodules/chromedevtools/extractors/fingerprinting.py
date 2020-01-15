@@ -114,6 +114,10 @@ instrumentProperty(window.Screen.prototype,
                  'colorDepth',
                  ['colorDepth'],
                  'fingerprinting:misc');
+instrumentProperty(window.Navigator.prototype,
+                 'platform',
+                 ['platform'],
+                 'fingerprinting:misc');
 """
 
 
@@ -215,13 +219,15 @@ class FingerprintingExtractor(Extractor):
         # self._webgl_call_stack = call_stack
 
     def _receive_misc_log(self, message, call_stack):
-        listofcheckedproperties = ['userAgent', 'language', 'languages', 'colorDepth']
+        listofcheckedproperties = ['userAgent', 'language', 'languages', 'colorDepth', 'platform']
+        # This check is here to differentiate between function calls and properties
+        # This will result in KeyError if not correctly placed in list above
         if message['name'] in listofcheckedproperties:
             calldict = {
                 'property': message['name'],
                 'value': message['value']
             }
-        elif 'arguments' in message.keys():
+        else:
             calldict = {
                 'method': message['name'],
                 'arguments': message['arguments']
