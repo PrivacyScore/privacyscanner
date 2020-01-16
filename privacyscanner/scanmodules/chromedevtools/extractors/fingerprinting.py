@@ -156,7 +156,7 @@ class FingerprintingExtractor(Extractor):
         }
         self._extract_canvas()
         self._toggle_fingerprint_bool()
-        self.result['fingerprinting']['overall_likeliness'] = self._compute_score()
+        self.result['fingerprinting']['overall_score'] = self._compute_score()
 
     def register_javascript(self):
         return INSTRUMENTATION_JS
