@@ -14,24 +14,24 @@ class SriExtractor(Extractor):
             self.extract_sri()
 
     def extract_sri(self):
-        requests = self.page.request_log
-        # TODO Implement sanity check for module
         sri_dict = {}
         final_sri_list = []
         failed_urls = []
 
-        sri_dict['require-sri-for'] = None
-        sri_dict['all-sri-active-valid'] = None
+        sri_dict['require_sri_for'] = None
+        sri_dict['all_sri_active_and_valid'] = None
+        sri_dict['at_least_one_sri_active'] = None
+        sri_dict['all_sri_active'] = None
 
         # Check already read CSP Values in _self
-        # Currently Chrome is configured to IGNORE require-sri-for. Only if the flag
+        # Currently Chrome is configured to IGNORE require_sri_for. Only if the flag
         # #enable-experimental-web-platform-features is enabled, it correctly throws an error if a script / style
         # has no integrity-hash.
 
         security_headers = self.result['security_headers']
         if security_headers['Content-Security-Policy'] is not None:
             if 'require-sri-for' in security_headers['Content-Security-Policy']:
-                sri_dict['require-sri-for'] = security_headers['Content-Security-Policy']['require-sri-for'][0]
+                sri_dict['require_sri_for'] = security_headers['Content-Security-Policy']['require-sri-for'][0]
         # This results in privacyscanner reading the CSP header for SRI but chromedevtools is currently not enforcing it
 
         node_id = self.page.tab.DOM.getDocument()['root']['nodeId']
@@ -48,10 +48,10 @@ class SriExtractor(Extractor):
 
                 if node['nodeType'] == 1 and 'href' in node['attributes']:
                     if "stylesheet" in node['attributes']:
-                        self.add_element_to_linklist(final_sri_list, None, node['attributes'])
+                        self._add_element_to_linklist(final_sri_list, None, node['attributes'])
                         break
                     if "script" in node['attributes']:
-                        self.add_element_to_linklist(final_sri_list, None, node['attributes'])
+                        self._add_element_to_linklist(final_sri_list, None, node['attributes'])
                         break
                 node_id = node.get('parentId')
 
@@ -75,16 +75,42 @@ class SriExtractor(Extractor):
                     element['integrity_valid'] = None
 
         # Check if all links have SRI enabled and have a valid hash
+
+        active_counter, valid_counter = 0, 0
+
         for element in final_sri_list:
-            if (not element['integrity_active']) or (not element['integrity_valid']):
-                sri_dict['all-sri-active-valid'] = False
-                break
+            if element['integrity_active'] and not None:
+                active_counter += 1
+            if element['integrity_valid'] and not None:
+                valid_counter += 1
+
+        # Case 1: All CSS/JS have SRI active
+
+        if len(final_sri_list) == active_counter:
+            sri_dict['all_sri_active'] = True
+        else:
+            sri_dict['all_sri_active'] = False
+
+        # Case 2: At least one of CSS/JS has SRI active (but can be invalid)
+        # This is to not punish websites for using SRI and having a bad hash due to changed code.
+
+        if active_counter > 0:
+            sri_dict['at_least_one_sri_active'] = True
+        else:
+            sri_dict['at_least_one_sri_active'] = False
+
+        # Case 3: All of the used CSS and JS have SRI enabled and all hashes match.
+
+        if active_counter == valid_counter == len(final_sri_list):
+            sri_dict['all_sri_active_and_valid'] = True
+        else:
+            sri_dict['all_sri_active_and_valid'] = False
 
         sri_dict['link-list'] = final_sri_list
 
         self.result['sri-info'] = sri_dict
 
-    def add_element_to_linklist(self, final_sri_list, node_value, node_attributes):
+    def _add_element_to_linklist(self, final_sri_list, node_value, node_attributes):
         global new_entry
         new_entry = dict(href=None, type=None, integrity_active=False, integrity_hash=None, integrity_valid=None)
         if node_value is not None:
