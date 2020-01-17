@@ -156,7 +156,7 @@ class FingerprintingExtractor(Extractor):
         }
         self._extract_canvas()
         self._toggle_fingerprint_bool()
-        self.result['fingerprinting']['overall_score'] = self._compute_score()
+        self.result['fingerprinting']['fingerprinting_score'] = self._compute_score()
 
     def register_javascript(self):
         return INSTRUMENTATION_JS
@@ -260,17 +260,17 @@ class FingerprintingExtractor(Extractor):
             score += 1
         if self._canvas['is_fingerprinting'] is True:
             score += 1
-        if len(self._misc['calls']) > 1:
+        if len(self._misc['calls']) > 0:
             score += 1
         if self._canvas['calls'] is not None:
             for element in self._canvas['calls']:
                 if 'arguments' in element.keys():
                     for argument in element['arguments']:
                         if 'Cwm fjordbank glyphs' in str(argument) and magic_string_trigger_cwm is False:
-                            score += 5
+                            score += 1
                             magic_string_trigger_cwm = True
                         if 'mmmmmmmmmmlli' in str(argument) and magic_string_trigger_mmm is False:
-                            score += 5
+                            score += 1
                             magic_string_trigger_mmm = True
         if score > 3:
             fingerprinting = [True, score]
