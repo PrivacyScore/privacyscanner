@@ -1,6 +1,17 @@
 Changelog
 =========
 
+0.8.0
+-----
+
+* GeoIP database download now requires a license key to download. The license
+  key must be added to the config file of privacyscanner. This is a breaking
+  change.
+* Remove Python 3.5 support. privacyscanner might still run under Python 3.5,
+  however, we will no longer guarantee that is does in future. Upgrade your
+  Python to 3.6 or better. This is a breaking change.
+* Fix: Host parsing of MX records is now more compliant
+
 0.7.6
 -----
 
