@@ -1,3 +1,4 @@
+import sys
 import tarfile
 import tempfile
 from pathlib import Path
@@ -11,9 +12,8 @@ from privacyscanner.scanmodules import ScanModule
 from privacyscanner.scanmodules.chromedevtools import parse_domain, TLDEXTRACT_CACHE_FILE
 from privacyscanner.utils import set_default_options, copy_to, download_file, file_is_outdated
 
-
 GEOIP_DATABASE_PATH = Path('GeoIP/GeoLite2-Country.mmdb')
-GEOIP_DOWNLOAD_URL = 'https://geolite.maxmind.com/download/geoip/database/GeoLite2-Country.tar.gz'
+GEOIP_DOWNLOAD_URL = 'https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key={license_key}&suffix=tar.gz'
 GEOIP_MAX_AGE = 3 * 24 * 3600
 
 
@@ -26,6 +26,7 @@ class DNSScanModule(ScanModule):
         set_default_options(options, {
             'geoip_download_url': GEOIP_DOWNLOAD_URL,
             'geoip_max_age': GEOIP_MAX_AGE,
+            'geoip_license_key': None,
         })
         super().__init__(options)
         cache_file = self.options['storage_path'] / TLDEXTRACT_CACHE_FILE
@@ -38,12 +39,14 @@ class DNSScanModule(ScanModule):
         self._geoip_reader = None
 
     def scan_site(self, result, meta):
+        self._warn_geoip_availability()
         dns = {}
 
         # Fetch MX records
         p = parse_domain(result['site_url'])
         mail_domain = p.fqdn[len('www.'):] if p.fqdn.startswith('www.') else p.fqdn
         mx_records = self._get_mx_records(mail_domain)
+        self.logger.warning(str(mx_records))
 
         # Create a list for which we fetch A/AAAA records
         domain_list = {mail_domain}
@@ -71,6 +74,9 @@ class DNSScanModule(ScanModule):
         result['dns'] = dns
 
     def update_dependencies(self):
+        if self.options['geoip_license_key'] is None:
+            self.logger.warning('License key for GeoIP database download not specified.')
+            return
         geoip_database_path = self.options['geoip_database_path']
         geoip_max_age = self.options['geoip_max_age']
         if not file_is_outdated(geoip_database_path, geoip_max_age):
@@ -78,7 +84,9 @@ class DNSScanModule(ScanModule):
         geoip_database_path.parent.mkdir(parents=True, exist_ok=True)
         FILES = ['COPYRIGHT.txt', 'LICENSE.txt', 'GeoLite2-Country.mmdb']
         with tempfile.NamedTemporaryFile() as f:
-            download_file(GEOIP_DOWNLOAD_URL, f)
+            download_url = GEOIP_DOWNLOAD_URL.format(
+                    license_key=self.options['geoip_license_key'])
+            download_file(download_url, f)
             archive = tarfile.open(f.name)
             for member in archive.getmembers():
                 base_name = Path(member.name).name
@@ -88,6 +96,8 @@ class DNSScanModule(ScanModule):
 
     def _get_geoip_reader(self):
         if self._geoip_reader is None:
+            if not self.options['geoip_database_path'].exists():
+                return None
             self._geoip_reader = Reader(str(self.options['geoip_database_path']))
         return self._geoip_reader
 
@@ -105,12 +115,13 @@ class DNSScanModule(ScanModule):
         for a in answer:
             country = None
             continent = None
-            try:
-                geo_result = reader.country(a.address)
-                country = geo_result.country.name
-                continent = geo_result.continent.name
-            except AddressNotFoundError:
-                pass
+            if reader:
+                try:
+                    geo_result = reader.country(a.address)
+                    country = geo_result.country.name
+                    continent = geo_result.continent.name
+                except AddressNotFoundError:
+                    pass
             entries.append({
                 'ip': a.address,
                 'reverse': self._get_reverse_records(a.address),
@@ -138,6 +149,7 @@ class DNSScanModule(ScanModule):
         except DNSException as e:
             self.logger.exception('Could not get MX records for %s: %s', mail_domain, str(e))
             return None
+        self.logger.warning(str(answer) + ' ' + answer[0].exchange.to_text())
         mx_records = [{
             'priority': a.preference,
             'host': a.exchange.to_text()[:-1]
@@ -145,3 +157,7 @@ class DNSScanModule(ScanModule):
         # We include the name in the ordering to have a deterministic order
         mx_records.sort(key=lambda rec: (rec['priority'], rec['host']))
         return mx_records
+
+    def _warn_geoip_availability(self):
+        if not self.options['geoip_database_path'].exists():
+            self.logger.warning('GeoIP database not available. Country lookup disabled.')
