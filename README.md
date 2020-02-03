@@ -18,9 +18,6 @@ privacyscanner is distributed via PyPI and can be easily installed using pip:
     pip install wheel
     pip install privacyscanner
 
-Usage
------
-
 Before first use, you have to download the dependencies of privacyscanner.
 These include the MaxMind GeoIP2 database and the Easylist adblock lists.
 For convenience, most dependencies can be downloaded with:
@@ -29,7 +26,26 @@ For convenience, most dependencies can be downloaded with:
 
 Those dependencies will be stored in `~/.local/share/privacyscanner`. In
 addition, google-chrome or chromium have to be installed and available in
-your PATH.
+your PATH. For Debian-based systems this can be done with:
+
+    apt install chromium
+
+Note: Due to changes in the licensing, GeoIP database of MaxMind cannot be
+downloaded without license key anymore. You therefore have to register an
+account at maxmind.com and enter your license key to your privacyscanner
+configuration file at `~/.config/privacyscanner/config.py` as follows:
+
+    SCAN_MODULE_OPTIONS = {
+        'dns': {
+            'geoip_license_key': 'YOUR-LICENSE-KEY'
+        }
+    }
+    
+For more information about the new licensing of the GeoIP database see:
+https://blog.maxmind.com/2019/12/18/significant-changes-to-accessing-and-using-geolite2-databases/
+
+Usage
+-----
 
 Scanning a single website, e.g. http://example.com/, can be done by running:
 
