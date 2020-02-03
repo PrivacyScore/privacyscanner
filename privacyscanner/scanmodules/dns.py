@@ -150,10 +150,20 @@ class DNSScanModule(ScanModule):
             self.logger.exception('Could not get MX records for %s: %s', mail_domain, str(e))
             return None
         self.logger.warning(str(answer) + ' ' + answer[0].exchange.to_text())
-        mx_records = [{
-            'priority': a.preference,
-            'host': a.exchange.to_text()[:-1]
-        } for a in answer]
+        mx_records = []
+        for a in answer:
+            host = a.exchange.to_text()
+            # The dot at the end marks a FQDN; it is not part of the host.
+            if host.endswith('.'):
+                host = host[:-1]
+            else:
+                host = '{}.{}'.format(host, mail_domain)
+            if not host:
+                continue
+            mx_records.append({
+                'priority': a.preference,
+                'host': host
+            })
         # We include the name in the ordering to have a deterministic order
         mx_records.sort(key=lambda rec: (rec['priority'], rec['host']))
         return mx_records
