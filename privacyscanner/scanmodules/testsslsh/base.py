@@ -11,8 +11,8 @@ from privacyscanner.utils import set_default_options, download_file
 from privacyscanner.utils.tls import get_cipher_info
 
 
-DOWNLOAD_URL = 'https://github.com/drwetter/testssl.sh/archive/3.0rc3.tar.gz'
-DOWNLOAD_HASH = '45f8aed24ad749175608a29c50566240a8a1b8ebcb32531d7bf6231ec269f4a5'
+DOWNLOAD_URL = 'https://github.com/drwetter/testssl.sh/archive/3.0.tar.gz'
+DOWNLOAD_HASH = 'ab3c9a000f0f6703e4fc94821e06f531de6d2799322bf534188ebf766365a9c1'
 
 _TESTSSL_PROTOCOL_NEGOTIATED_REGEXP = re.compile('^Default protocol (TLS1.[0-3]|SSLv[23])$')
 _TESTSSL_SUITE_NAME = re.compile('^([A-Za-z0-9-]+)(,| |$)')
