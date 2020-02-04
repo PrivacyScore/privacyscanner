@@ -46,7 +46,6 @@ class DNSScanModule(ScanModule):
         p = parse_domain(result['site_url'])
         mail_domain = p.fqdn[len('www.'):] if p.fqdn.startswith('www.') else p.fqdn
         mx_records = self._get_mx_records(mail_domain)
-        self.logger.warning(str(mx_records))
 
         # Create a list for which we fetch A/AAAA records
         domain_list = {mail_domain}
@@ -149,7 +148,6 @@ class DNSScanModule(ScanModule):
         except DNSException as e:
             self.logger.exception('Could not get MX records for %s: %s', mail_domain, str(e))
             return None
-        self.logger.warning(str(answer) + ' ' + answer[0].exchange.to_text())
         mx_records = []
         for a in answer:
             host = a.exchange.to_text()
