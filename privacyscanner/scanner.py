@@ -260,7 +260,7 @@ def main():
     parser_scan = subparsers.add_parser('scan')
     parser_scan.add_argument('site', help='Site to scan')
     parser_scan.add_argument('-c', '--config', help='Configuration_file')
-    parser_scan.add_argument('--results', help='Directory to store results')
+    parser_scan.add_argument('-r', '--results', help='Directory to store results')
     parser_scan.add_argument('--import-results', dest='import_results',
                              help='Import JSON results from a file before scanning')
     parser_scan.add_argument('-m', '--scan-modules', dest='scan_modules',
