@@ -1,19 +1,12 @@
 from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
 from datetime import datetime
-from privacyscanner.utils import download_file
-from pathlib import Path
-
-CLIQZ_DOWNLOAD_PREFIX = 'https://raw.githubusercontent.com/cliqz-oss/whotracks.me/master/whotracksme/data/assets/'
-CLIQZ_FILES = ['trackerdb.sql']
-CLIQZ_PATH = Path('cliqz')
 
 
 class CookieSyncExtractor(Extractor):
 
     def extract_information(self):
-        trackerdb = self._load_tracker_db(True)
-        cookies_synced = dict(cookie_sync_occurred=None, sync_occurrence_counter=0, sync_relation=[], sync_domains=[],
-                              sync_company_network=[])
+        cookies_synced = dict(cookie_sync_occurred=None, number_sync_relations=0, number_sync_domains=0,
+                              sync_relation=[], sync_domains=[])
         tracker_requests = []
         tracker_cookies = []
 
@@ -36,37 +29,28 @@ class CookieSyncExtractor(Extractor):
                         if cookie_domain not in request['url']:
 
                             try:
-                                t_url = request['url'].split('/')[2]
-                                d_name = t_url.split('.')
-                                target_company_name = d_name[len(d_name)-2]+"."+d_name[len(d_name)-1]
+                                target_domain = request['url'].split('/')[2]
                             except IndexError:
-                                target_company_name = request['url']
-                            if target_company_name not in cookies_synced['sync_domains']:
-                                cookies_synced['sync_domains'].append(target_company_name)
-                                scn = self._find_company_network(trackerdb, target_company_name)
-                                if scn is not None and scn not in cookies_synced['sync_company_network']:
-                                    cookies_synced['sync_company_network'].append(scn)
+                                target_domain = request['url']
+                            if target_domain not in cookies_synced['sync_domains']:
+                                cookies_synced['sync_domains'].append(target_domain)
 
                             try:
-                                csplit = cookie['domain'].split('.')
-                                origin_company_name = csplit[len(csplit)-2]+"."+csplit[len(csplit)-1]
+                                origin_domain = cookie['domain']
                             except IndexError:
-                                origin_company_name = cookie['domain']
-                            if origin_company_name not in cookies_synced['sync_domains']:
-                                cookies_synced['sync_domains'].append(origin_company_name)
-                                scn = self._find_company_network(trackerdb, origin_company_name)
-                                if scn is not None and scn not in cookies_synced['sync_company_network']:
-                                    cookies_synced['sync_company_network'].append(scn)
+                                origin_domain = cookie['domain']
+                            if origin_domain not in cookies_synced['sync_domains']:
+                                cookies_synced['sync_domains'].append(origin_domain)
 
                             strikeout_count = 0
                             if len(cookies_synced) > 0:
                                 for element in cookies_synced['sync_relation']:
                                     strikeout_subcount = 0
-                                    if target_company_name in element['cookie_sync_target']:
+                                    if target_domain in element['target']:
                                         strikeout_subcount += 1
-                                    if origin_company_name in element['cookie_sync_target']:
+                                    if origin_domain in element['target']:
                                         strikeout_subcount += 1
-                                    if origin_company_name in element['cookie_sync_origin']:
+                                    if origin_domain in element['origin']:
                                         strikeout_subcount += 1
                                     if strikeout_subcount > 1:
                                         strikeout_count = 1
@@ -86,48 +70,16 @@ class CookieSyncExtractor(Extractor):
 
                             if strikeout_count == 0:
                                 cookies_synced['cookie_sync_occurred'] = True
-                                cookies_synced['sync_relation'].append({'cookie_sync_origin': cookie['domain'],
-                                                                        'cookie_sync_target': request['url'],
-                                                                        'cookie_sync_value': cookie['value']})
+                                cookies_synced['sync_relation'].append({'origin': cookie['domain'],
+                                                                        'target': request['url'],
+                                                                        'value': cookie['value']})
 
         if cookies_synced['cookie_sync_occurred'] is None:
             cookies_synced['cookie_sync_occurred'] = False
             cookies_synced['sync_domains'] = None
 
-        cookies_synced['sync_occurrence_counter'] = len(cookies_synced['sync_relation'])
+        if cookies_synced['sync_domains'] and cookies_synced['sync_relation'] is not None:
+            cookies_synced['number_sync_relations'] = len(cookies_synced['sync_relation'])
+            cookies_synced['number_sync_domains'] = len(cookies_synced['sync_domains'])
 
         self.result['cookiesync'] = cookies_synced
-
-    @staticmethod
-    def update_dependencies(options):
-        trackerdb_path = options['storage_path'] / CLIQZ_PATH
-        trackerdb_path.mkdir(parents=True, exist_ok=True)
-        for filename in CLIQZ_FILES:
-            download_url = CLIQZ_DOWNLOAD_PREFIX + filename
-            target_file = (trackerdb_path / filename).open('wb')
-            download_file(download_url, target_file)
-
-    def _load_tracker_db(self, load_switch):
-        if load_switch:
-            trackerdb = {}
-            tracker_db_path = self.options['storage_path'] / CLIQZ_PATH / "trackerdb.sql"
-            f = open(tracker_db_path, "r")
-            sql_generator = f.readlines()
-            for line in sql_generator:
-                if 'INSERT INTO "tracker_domains"' in line:
-                    sl = line.split("'")
-                    if not sl[1] in trackerdb:
-                        trackerdb[sl[1]] = []
-                    trackerdb[sl[1]].append(sl[3])
-
-        if not load_switch:
-            trackerdb = {}
-
-        return trackerdb
-
-    def _find_company_network(self, trackerdb, domain):
-        for key in trackerdb.keys():
-            for i in range(len(trackerdb[key])):
-                if domain in trackerdb[key][i]:
-                    return key
-        return None
