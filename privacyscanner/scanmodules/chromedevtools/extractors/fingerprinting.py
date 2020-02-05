@@ -248,7 +248,6 @@ class FingerprintingExtractor(Extractor):
             }
         if calldict not in self._misc['calls']:
             self._misc['calls'].append(calldict)
-        # self._misc_call_stack = call_stack
 
     def _compute_score(self):
         score = 0
@@ -272,8 +271,4 @@ class FingerprintingExtractor(Extractor):
                         if 'mmmmmmmmmmlli' in str(argument) and magic_string_trigger_mmm is False:
                             score += 1
                             magic_string_trigger_mmm = True
-        if score > 3:
-            fingerprinting = [True, score]
-        else:
-            fingerprinting = [False, score]
-        return fingerprinting
+        return score
