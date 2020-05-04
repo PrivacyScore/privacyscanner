@@ -2,6 +2,9 @@ import base64
 
 from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
 
+MISC_FINGERPRINTING_THRESHOLD = 1
+# This value is the lower threshold for misc. fingerprinting attributes,
+# to lower the chance of false positives -> More calls, higher chance of fingerprinting.
 
 INSTRUMENTATION_JS = """
 function instrumentFunction(func, name, log_type) {
@@ -16,7 +19,7 @@ function instrumentFunction(func, name, log_type) {
     }
 }
 
-function instrumentProperty(obj, prop, name, log_type) {
+function instrumentProperty(obj, name, prop, log_type) {
     let prototype = obj;
     let descriptor;
     do {
@@ -33,7 +36,7 @@ function instrumentProperty(obj, prop, name, log_type) {
 
     let origGetter = descriptor.get;
     let origSetter = descriptor.set;
-    
+
     Object.defineProperty(obj, prop, {
         get: function() {
             let value = origGetter.apply(this, arguments);
@@ -53,7 +56,7 @@ function instrumentProperty(obj, prop, name, log_type) {
                 'access': 'set'
             });
             return origSetter.apply(this, arguments);
-            
+
         }
     });
 }
@@ -79,21 +82,81 @@ instrumentObject(window.CanvasRenderingContext2D.prototype,
                  'CanvasRenderingContext2D',
                  ['fillText', 'strokeText'],
                  'fingerprinting:canvas');
+instrumentObject(window.AudioContext.prototype,
+                 'AudioContext',
+                 ['createAnalyser'],
+                 'fingerprinting:audio');
+instrumentObject(window.WebGLRenderingContext.prototype,
+                 'WebGLRenderingContext',
+                 ['readPixels', 'getParameter'],
+                 'fingerprinting:webgl');
+instrumentObject(localStorage,
+                 'localStorage',
+                 ['setItem', 'getItem'],
+                 'fingerprinting:misc');
+instrumentObject(sessionStorage,
+                 'sessionStorage',
+                 ['setItem', 'getItem'],
+                 'fingerprinting:misc');
+instrumentProperty(window.Navigator.prototype,
+                 'userAgent',
+                 ['userAgent'],
+                 'fingerprinting:misc');
+instrumentProperty(window.Navigator.prototype,
+                 'language',
+                 ['language'],
+                 'fingerprinting:misc');
+instrumentProperty(window.Navigator.prototype,
+                 'languages',
+                 ['languages'],
+                 'fingerprinting:misc');
+instrumentProperty(window.Screen.prototype,
+                 'colorDepth',
+                 ['colorDepth'],
+                 'fingerprinting:misc');
+instrumentProperty(window.Navigator.prototype,
+                 'platform',
+                 ['platform'],
+                 'fingerprinting:misc');
+instrumentProperty(window.Navigator.prototype,
+                 'cookieEnabled',
+                 ['cookieEnabled'],
+                 'fingerprinting:misc');
+instrumentProperty(window.Navigator.prototype,
+                 'doNotTrack',
+                 ['doNotTrack'],
+                 'fingerprinting:misc');
+instrumentProperty(window.Navigator.prototype,
+                 'oscpu',
+                 ['oscpu'],
+                 'fingerprinting:misc');
 """
 
 
 class FingerprintingExtractor(Extractor):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
         self._canvas = {'calls': [], 'is_fingerprinting': False}
+        self._audio = {'calls': [], 'is_fingerprinting': False}
+        self._webgl = {'calls': [], 'is_fingerprinting': False}
+        self._misc = {'calls': [], 'is_fingerprinting': False}
         self._canvas_call_stack = None
+        self._audio_call_stack = None
+        self._webgl_call_stack = None
+        self._misc_call_stack = None
         self._canvas_image = None
 
     def extract_information(self):
         self.result['fingerprinting'] = {
-            'canvas': self._canvas
+            'canvas': self._canvas,
+            'audio': self._audio,
+            'webgl': self._webgl,
+            'misc': self._misc,
         }
         self._extract_canvas()
+        self._toggle_fingerprint_bool()
+        self.result['fingerprinting']['fingerprinting_score'] = self._compute_score()
 
     def register_javascript(self):
         return INSTRUMENTATION_JS
@@ -101,6 +164,12 @@ class FingerprintingExtractor(Extractor):
     def receive_log(self, log_type, message, call_stack):
         if log_type == 'fingerprinting:canvas':
             self._receive_canvas_log(message, call_stack)
+        if log_type == 'fingerprinting:audio':
+            self._receive_audio_log(message, call_stack)
+        if log_type == 'fingerprinting:webgl':
+            self._receive_webgl_log(message, call_stack)
+        if log_type == 'fingerprinting:misc':
+            self._receive_misc_log(message, call_stack)
 
     def _extract_canvas(self):
         uses_text = False
@@ -123,6 +192,14 @@ class FingerprintingExtractor(Extractor):
             if content:
                 self.result.add_file('fingerprinting_canvas', content)
 
+    def _toggle_fingerprint_bool(self):
+        if len(self._audio['calls']) > 0:
+            self._audio['is_fingerprinting'] = True
+        if len(self._webgl['calls']) > 0:
+            self._webgl['is_fingerprinting'] = True
+        if len(self._misc['calls']) > MISC_FINGERPRINTING_THRESHOLD:
+            self._misc['is_fingerprinting'] = True
+
     def _receive_canvas_log(self, message, call_stack):
         self._canvas['calls'].append({
             'method': message['name'],
@@ -135,3 +212,63 @@ class FingerprintingExtractor(Extractor):
             # call stack because it provides no value.
             self._canvas_call_stack = call_stack[1:]
             self._canvas_image = message['retval']
+
+    def _receive_audio_log(self, message, call_stack):
+        calldict = {
+            'method': message['name'],
+            'arguments': message['arguments']
+        }
+        if calldict not in self._audio['calls']:
+            self._audio['calls'].append(calldict)
+        # self._audio_call_stack = call_stack
+
+    def _receive_webgl_log(self, message, call_stack):
+        calldict = {
+            'method': message['name'],
+            'arguments': message['arguments']
+        }
+        if calldict not in self._webgl['calls']:
+            self._webgl['calls'].append(calldict)
+        # self._webgl_call_stack = call_stack
+
+    def _receive_misc_log(self, message, call_stack):
+        listofcheckedproperties = ['userAgent', 'language', 'languages', 'colorDepth', 'platform', 'cookieEnabled',
+                                   'doNotTrack', 'oscpu']
+        # This check is here to differentiate between function calls and properties
+        # This will result in KeyError if not correctly placed in list above
+        if message['name'] in listofcheckedproperties:
+            calldict = {
+                'property': message['name'],
+                'value': message['value']
+            }
+        else:
+            calldict = {
+                'method': message['name'],
+                'arguments': message['arguments']
+            }
+        if calldict not in self._misc['calls']:
+            self._misc['calls'].append(calldict)
+
+    def _compute_score(self):
+        score = 0
+        magic_string_trigger_cwm = False
+        magic_string_trigger_mmm = False
+        if len(self._audio['calls']) > 0:
+            score += 1
+        if len(self._webgl['calls']) > 0:
+            score += 1
+        if self._canvas['is_fingerprinting'] is True:
+            score += 1
+        if len(self._misc['calls']) > 0:
+            score += 1
+        if self._canvas['calls'] is not None:
+            for element in self._canvas['calls']:
+                if 'arguments' in element.keys():
+                    for argument in element['arguments']:
+                        if 'Cwm fjordbank glyphs' in str(argument) and magic_string_trigger_cwm is False:
+                            score += 1
+                            magic_string_trigger_cwm = True
+                        if 'mmmmmmmmmmlli' in str(argument) and magic_string_trigger_mmm is False:
+                            score += 1
+                            magic_string_trigger_mmm = True
+        return score

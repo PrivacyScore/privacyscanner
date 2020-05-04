@@ -275,10 +275,12 @@ class ChromeScan:
 
 
 class PageScanner:
+
     def __init__(self, extractor_classes):
         self._extractor_classes = extractor_classes
         self._page_loaded = threading.Event()
         self._reset()
+        self.lock = threading.Lock()
 
     def scan(self, browser, result, logger, options):
         self._tab = browser.new_tab()
@@ -309,6 +311,9 @@ class PageScanner:
         self._register_security_callbacks()
         self._tab.Security.enable()
         self._tab.Security.setIgnoreCertificateErrors(ignore=True)
+
+        self._register_log_callbacks()
+        self._tab.Log.enable()
 
         self._tab.Page.loadEventFired = self._cb_load_event_fired
         self._tab.Page.frameScheduledNavigation = self._cb_frame_scheduled_navigation
@@ -463,6 +468,7 @@ class PageScanner:
         pass
 
     def _cb_paused(self, **info):
+        self.lock.acquire()
         self._debugger_paused.set()
         if self._log_breakpoint in info['hitBreakpoints']:
             call_frames = []
@@ -488,6 +494,7 @@ class PageScanner:
             self._receive_log(*call_frames[0]['args'], call_frames[1:])
         if self._debugger_attached.is_set():
             self._tab.Debugger.resume()
+        self.lock.release()
 
     def _cb_resumed(self, **info):
         self._debugger_paused.clear()
@@ -511,6 +518,9 @@ class PageScanner:
     def _cb_loading_failed(self, **failed_request):
         self._page.add_failed_request(failed_request)
 
+    def _cb_log_entryAdded(self, **log):
+        self._page.add_log_event(log)
+
     def _register_network_callbacks(self):
         self._tab.Network.requestWillBeSent = self._cb_request_will_be_sent
         self._tab.Network.responseReceived = self._cb_response_received
@@ -526,6 +536,9 @@ class PageScanner:
 
     def _unregister_security_callbacks(self):
         self._tab.Security.securityStateChanged = None
+
+    def _register_log_callbacks(self):
+        self._tab.Log.entryAdded = self._cb_log_entryAdded
 
     def _is_headless(self):
         try:
@@ -599,6 +612,7 @@ class Page:
         self.failed_request_log = []
         self.response_log = []
         self.security_state_log = []
+        self.logging_log = []
         self.scan_start = None
         self.tab = tab
         self._response_lookup = defaultdict(list)
@@ -619,6 +633,9 @@ class Page:
 
     def add_failed_request(self, failed_request):
         self.failed_request_log.append(failed_request)
+
+    def add_log_event(self, log_event):
+        self.logging_log.append(log_event)
 
     def add_response(self, response):
         self.response_log.append(response)

@@ -15,4 +15,8 @@ from .trackerdetect import TrackerDetectExtractor
 from .screenshot import ScreenshotExtractor
 from .imprint import ImprintExtractor
 from .hstspreload import HSTSPreloadExtractor
+from .generatortag import GeneratorTagExtractor
+from .sricheck import SriExtractor
+from .cookiesync import CookieSyncExtractor
 from .fingerprinting import FingerprintingExtractor
+from .whotracksme import WhotracksmeExtractor

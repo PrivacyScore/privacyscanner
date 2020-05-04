@@ -23,10 +23,18 @@ class ServerleaksScanModule(ScanModule):
 
 def _match_db_dump(content):
     targets = ["SQLite", "CREATE TABLE", "INSERT INTO", "DROP TABLE"]
-    matched = False
-    for target in targets:
-        matched |= target in content
-    return matched
+    return any(target in content for target in targets)
+
+
+def _match_env_file(content):
+    targets = ["TERM", "PATH", "COMPOSER", "INSTALL"]
+    return any(target in content for target in targets)
+
+
+def _match_package_file(content):
+    targets = ["name", "author", "contributors", "bugs", "homepage", "version", "license", "keywords", "description",
+               "repository", "main", "private", "scripts", "dependencies", "devDependencies", "engines", "browserslist"]
+    return any(target in content for target in targets)
 
 
 def _concat_sub(url, suffix):
@@ -102,6 +110,10 @@ TRIALS = [
     ('.svn/wc.db', 'SQLite'),
     ('core', 'ELF'),
     ('.DS_Store', 'Bud1'),
+    ('.npmrc', '='),
+    ('package.json', _match_package_file),
+    ('workspace.xml', 'FileEditorManager'),
+    ('.gitlab-ci.yml', 'job'),
 
     # Check for Database dumps
     # sqldump - MySQL/MariaDB
