@@ -41,7 +41,10 @@ QueueEntry = namedtuple('QueueEntry', ['scan_module_name', 'num_try', 'not_befor
 
 
 def load_config(config_file):
-    config = deepcopy(defaultconfig.__dict__)
+    # defaultconfig.__dict__ may contain unpicklable items
+    default = dict((key, val) for key, val in defaultconfig.__dict__
+                   if key[0].isupper())
+    config = deepcopy(default)
     if config_file is None:
         for filename in CONFIG_LOCATIONS:
             if filename.is_file():
