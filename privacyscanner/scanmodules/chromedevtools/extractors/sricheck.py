@@ -56,6 +56,7 @@ class SriExtractor(Extractor):
                 node_id = node.get('parentId')
 
         # Check if href is in entry list, if yes set attributes accordingly.
+        a = 3
         logging_log = self.page.logging_log
         for element in logging_log:
             if element['entry']['source'] == 'security' and element['entry']['level'] == 'error':
@@ -67,7 +68,8 @@ class SriExtractor(Extractor):
                 if element['integrity_active']:
                     element['integrity_valid'] = True
             for final_url in failed_urls:
-                if '/' + element['href'].replace('/', '', 1) in final_url:
+                # if '/' + element['href'].replace('/', '', 1) in final_url:
+                if '/' + element['href'] in final_url:
                     element['integrity_valid'] = False
                 elif element['integrity_active']:
                     element['integrity_valid'] = True
@@ -86,7 +88,7 @@ class SriExtractor(Extractor):
 
         # Case 1: All CSS/JS have SRI active
 
-        if len(final_sri_list) == active_counter:
+        if len(final_sri_list) > 0 and len(final_sri_list) == active_counter:
             sri_dict['all_sri_active'] = True
         else:
             sri_dict['all_sri_active'] = False
@@ -101,7 +103,7 @@ class SriExtractor(Extractor):
 
         # Case 3: All of the used CSS and JS have SRI enabled and all hashes match.
 
-        if active_counter == valid_counter == len(final_sri_list):
+        if active_counter == valid_counter == len(final_sri_list) and len(final_sri_list) > 0:
             sri_dict['all_sri_active_and_valid'] = True
         else:
             sri_dict['all_sri_active_and_valid'] = False

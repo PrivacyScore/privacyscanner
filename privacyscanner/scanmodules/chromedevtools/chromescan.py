@@ -19,7 +19,6 @@ from privacyscanner.exceptions import RetryScan
 from privacyscanner.scanmodules.chromedevtools.utils import scripts_disabled
 from privacyscanner.utils import kill_everything
 
-
 CHANGE_WAIT_TIME = 15
 
 # See https://github.com/GoogleChrome/chrome-launcher/blob/master/docs/chrome-flags-for-tools.md
@@ -127,7 +126,7 @@ ON_NEW_DOCUMENT_JAVASCRIPT = """
     function log(type, message) {
         var setBreakpointOnThisLine;
     }
-    
+
     window.alert = function() {};
     window.confirm = function() {
         return true;
@@ -135,46 +134,47 @@ ON_NEW_DOCUMENT_JAVASCRIPT = """
     window.prompt = function() {
         return true;
     };
-    
+
     __extra_scripts__
 })();
 """.lstrip()
 
 # TODO: There are still some contexts in which this JavaScript snippet does not
 #       run properly. This requires more research.
-EXTRACT_ARGUMENTS_JAVASCRIPT = '''
+EXTRACT_ARGUMENTS_JAVASCRIPT = """
 (function(logArguments) {
-    let retval = 'null';
-    if (logArguments !== null) {
-        let duplicateReferences = [];
-        // JSON cannot handle arbitrary data structures, especially not those
-        // with circular references. Therefore we use a custom handler, that,
-        // first, remember serialized objects, second, stringifies an object
-        // if possible and dropping it if it is not.
-        retval = JSON.stringify(logArguments, function(key, value) {
-            if (typeof(value) === 'object' && value !== null) {
-                if (duplicateReferences.indexOf(value) !== -1) {
-                    try {
-                        // This is a very ugly hack here. When we have a
-                        // duplicate reference, we have to check if it is
-                        // really a duplicate reference or only the same value
-                        // occurring twice. Therefore, we try to JSON.stringify
-                        // it without custom handler. If it throws an exception,
-                        // it is indeed circular and we drop it.
-                        JSON.stringify(value)
-                    } catch (e) {
-                        return;
-                    }
-                } else {
-                    duplicateReferences.push(value);
+    function cleanObj(obj, depth) {
+        if (depth > 4) {
+            return null;
+        }
+        if (typeof(obj) === 'string' || typeof(obj) === 'number') {
+            return obj;
+        } else if (typeof(obj) === 'object') {
+            if (obj instanceof Array) {
+                let newArr = [];
+                for (let i = 0; i < obj.length; i++) {
+                    newArr.push(cleanObj(obj[i], depth + 1));
                 }
+                return newArr;
+            } else if (obj instanceof Object) {
+                let newObj = {};
+                for (let key in obj) {
+                    if (obj.hasOwnProperty(key)) {
+                        newObj[key] = cleanObj(obj[key], depth + 1);
+                    }
+                }
+                return newObj;
+            } else if (obj instanceof String) {
+                return obj;
+            } else if (obj instanceof Date) {
+                return obj;
             }
-            return value;
-        });
+        }
+        return null;
     }
-    return retval;
+    return JSON.stringify(cleanObj(logArguments, 0));
 })(typeof(arguments) !== 'undefined' ? Array.from(arguments) : null);
-'''.lstrip()
+""".lstrip()
 
 # See comments in ON_NEW_DOCUMENT_JAVASCRIPT
 ON_NEW_DOCUMENT_JAVASCRIPT_LINENO = 7
@@ -275,12 +275,10 @@ class ChromeScan:
 
 
 class PageScanner:
-
     def __init__(self, extractor_classes):
         self._extractor_classes = extractor_classes
         self._page_loaded = threading.Event()
         self._reset()
-        self.lock = threading.Lock()
 
     def scan(self, browser, result, logger, options):
         self._tab = browser.new_tab()
@@ -311,7 +309,6 @@ class PageScanner:
         self._register_security_callbacks()
         self._tab.Security.enable()
         self._tab.Security.setIgnoreCertificateErrors(ignore=True)
-
         self._register_log_callbacks()
         self._tab.Log.enable()
 
@@ -325,10 +322,7 @@ class PageScanner:
         self._tab.Page.enable()
 
         if javascript_enabled:
-            self._tab.Debugger.scriptParsed = self._cb_script_parsed
-            self._tab.Debugger.scriptFailedToParse = self._cb_script_failed_to_parse
-            self._tab.Debugger.paused = self._cb_paused
-            self._tab.Debugger.resumed = self._cb_resumed
+            self._register_debugger_callbacks()
             self._tab.Debugger.enable()
             # Pause the JavaScript before we navigate to the page. This
             # gives us some time to setup the debugger before any JavaScript
@@ -403,6 +397,7 @@ class PageScanner:
             self._reset()
             raise NotReachableError('Not reachable for unknown reasons.')
 
+        self._unregister_debugger_callbacks()
         self._tab.Page.disable()
         if javascript_enabled:
             self._tab.Debugger.disable()
@@ -428,7 +423,10 @@ class PageScanner:
             if 'postData' in request:
                 request['post_data'] = request['postData']
             else:
-                post_data = self._tab.Network.getRequestPostData(requestId=requestId)
+                # FIXME: We are not allowed to call getRequestPostData
+                #        within a callback.
+                # post_data = self._tab.Network.getRequestPostData(requestId=requestId)
+                post_data = {'postData': ''}
                 # To avoid a too high memory usage by single requests
                 # we just store the first 64 KiB of the post data
                 request['post_data'] = post_data['postData'][:65536]
@@ -468,7 +466,6 @@ class PageScanner:
         pass
 
     def _cb_paused(self, **info):
-        self.lock.acquire()
         self._debugger_paused.set()
         if self._log_breakpoint in info['hitBreakpoints']:
             call_frames = []
@@ -491,24 +488,30 @@ class PageScanner:
                     },
                     'args': args
                 })
-            self._receive_log(*call_frames[0]['args'], call_frames[1:])
+            # We expect our function to be called with two arguments. This
+            # should always be the case, but for unknown reason it is not.
+            # TODO: Investigate why there are not always two arguments.
+            if len(call_frames[0]['args']) == 2:
+                self._receive_log(*call_frames[0]['args'], call_frames[1:])
         if self._debugger_attached.is_set():
             self._tab.Debugger.resume()
-        self.lock.release()
 
     def _cb_resumed(self, **info):
         self._debugger_paused.clear()
 
     def _cb_load_event_fired(self, timestamp, **kwargs):
         self._page_loaded.set()
-    
+
+    def _cb_log_entryAdded(self, **log):
+        self._page.add_log_event(log)
+
     def _cb_frame_scheduled_navigation(self, frameId, delay, reason, url, **kwargs):
         # We assume that our scan will finish within 60 seconds including
         # a security margin. So we just ignore scheduled navigations if
         # they are too far in future.
         if delay <= 60:
             self._document_will_change.set()
-    
+
     def _cb_frame_cleared_scheduled_navigation(self, frameId):
         self._document_will_change.clear()
 
@@ -517,9 +520,6 @@ class PageScanner:
 
     def _cb_loading_failed(self, **failed_request):
         self._page.add_failed_request(failed_request)
-
-    def _cb_log_entryAdded(self, **log):
-        self._page.add_log_event(log)
 
     def _register_network_callbacks(self):
         self._tab.Network.requestWillBeSent = self._cb_request_will_be_sent
@@ -534,11 +534,23 @@ class PageScanner:
     def _register_security_callbacks(self):
         self._tab.Security.securityStateChanged = self._cb_security_state_changed
 
+    def _register_log_callbacks(self):
+        self._tab.Log.entryAdded = self._cb_log_entryAdded
+
     def _unregister_security_callbacks(self):
         self._tab.Security.securityStateChanged = None
 
-    def _register_log_callbacks(self):
-        self._tab.Log.entryAdded = self._cb_log_entryAdded
+    def _register_debugger_callbacks(self):
+        self._tab.Debugger.scriptParsed = self._cb_script_parsed
+        self._tab.Debugger.scriptFailedToParse = self._cb_script_failed_to_parse
+        self._tab.Debugger.paused = self._cb_paused
+        self._tab.Debugger.resumed = self._cb_resumed
+
+    def _unregister_debugger_callbacks(self):
+        self._tab.Debugger.scriptParsed = None
+        self._tab.Debugger.scriptFailedToParse = None
+        self._tab.Debugger.paused = None
+        self._tab.Debugger.resumed = None
 
     def _is_headless(self):
         try:
