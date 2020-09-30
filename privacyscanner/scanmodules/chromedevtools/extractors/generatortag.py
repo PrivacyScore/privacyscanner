@@ -37,12 +37,10 @@ class GeneratorTagExtractor(Extractor):
                 node_id = node.get('parentId')
 
         tags = list(set(tags))
-        generator_tags = {}
+        generator_tags = []
         if tags:
-            i = 0
             for element in tags:
-                generator_tags[str(i + 1)] = tags[i]
-                i += 1
+                generator_tags.append(element)
             self.result['generator'] = generator_tags
         else:
             self.result['generator'] = None

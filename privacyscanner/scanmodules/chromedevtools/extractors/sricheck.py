@@ -56,7 +56,6 @@ class SriExtractor(Extractor):
                 node_id = node.get('parentId')
 
         # Check if href is in entry list, if yes set attributes accordingly.
-        a = 3
         logging_log = self.page.logging_log
         for element in logging_log:
             if element['entry']['source'] == 'security' and element['entry']['level'] == 'error':
