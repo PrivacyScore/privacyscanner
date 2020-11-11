@@ -27,7 +27,15 @@ class TestsslshMailScanModule(TestsslshScanModuleBase):
     target_parameters = [Parameter.STARTTLS, 'smtp']
 
     def _get_host(self, result):
-        return result['mail']['domain'] + ':25'
+        host = result['mail']['domain']
+        try:
+          mailhost = result['dns'][host]['MX'][0]['host'] # might raise a keyerror on domains without an MX record
+          resolved = result['dns'][mailhost].get('A', None)
+          if not resolved or len(resolved) == 0: # fallback to ipv6 mailserver
+            resolved = result['dns'][mailhost].get('AAAA', None)
+          return resolved[0]['ip'] + ':25'
+        except KeyError:
+          return result['mail']['domain'] + ':25'
 
     def _can_run(self, result):
         # If the mail host is not reachable, the has_starttls key is
