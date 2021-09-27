@@ -6,7 +6,7 @@ from privacyscanner.scanmodules.chromedevtools.extractors.base import Extractor
 from privacyscanner.utils import download_file, file_is_outdated
 
 
-HSTS_PRELOAD_URL = 'https://cs.chromium.org/codesearch/f/chromium/src/net/http/transport_security_state_static.json'
+HSTS_PRELOAD_URL = 'https://github.com/chromium/chromium/raw/master/net/http/transport_security_state_static.json'
 
 _hsts_lookup = None
 
