@@ -12,7 +12,7 @@ from privacyscanner.utils.tls import get_cipher_info
 
 
 DOWNLOAD_URL = 'https://github.com/drwetter/testssl.sh/archive/3.0.tar.gz'
-DOWNLOAD_HASH = 'ab3c9a000f0f6703e4fc94821e06f531de6d2799322bf534188ebf766365a9c1'
+DOWNLOAD_HASH = 'a1d95c0ffc9a223bf3dacb831433d3cbf31cae03f3d376de2850e52bec0a688a'
 
 _TESTSSL_PROTOCOL_NEGOTIATED_REGEXP = re.compile('^Default protocol (TLS1.[0-3]|SSLv[23])$')
 _TESTSSL_SUITE_NAME = re.compile('^([A-Za-z0-9-]+)(,| |$)')
