@@ -36,7 +36,8 @@ class ChromeDevtoolsScanModule(ScanModule):
             options['chrome_executable'] = find_chrome_executable()
         set_default_options(options, {
             'disable_javascript': False,
-            'https_same_content_threshold': 0.9
+            'https_same_content_threshold': 0.9,
+            'profile_directory': None,
         })
         super().__init__(options)
         cache_file = self.options['storage_path'] / TLDEXTRACT_CACHE_FILE

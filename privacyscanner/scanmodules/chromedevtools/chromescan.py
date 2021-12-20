@@ -193,21 +193,26 @@ class DNSNotResolvedError(Exception):
 
 
 class ChromeBrowser:
-    def __init__(self, debugging_port=9222, chrome_executable=None):
+    def __init__(self, debugging_port=9222, chrome_executable=None,
+                       profile_directory=None):
         self._debugging_port = debugging_port
         if chrome_executable is None:
             chrome_executable = find_chrome_executable()
         self._chrome_executable = chrome_executable
+        self._profile_directory = profile_directory
 
     def __enter__(self):
         self._temp_dir = tempfile.TemporaryDirectory()
         temp_dirname = self._temp_dir.name
         user_data_dir = Path(temp_dirname) / 'chrome-profile'
-        user_data_dir.mkdir()
-        default_dir = user_data_dir / 'Default'
-        default_dir.mkdir()
-        with (default_dir / 'Preferences').open('w') as f:
-            json.dump(PREFS, f)
+        if self._profile_directory is None:
+            user_data_dir.mkdir()
+            default_dir = user_data_dir / 'Default'
+            default_dir.mkdir()
+            with (default_dir / 'Preferences').open('w') as f:
+                json.dump(PREFS, f)
+        else:
+            shutil.copytree(self._profile_directory, user_data_dir)
         self._start_chrome(user_data_dir)
         return self.browser
 
@@ -246,10 +251,11 @@ class ChromeScan:
 
     def scan(self, result, logger, options, meta, debugging_port=9222):
         executable = options['chrome_executable']
+        profile_directory = options['profile_directory']
         scanner = PageScanner(self._extractor_classes)
         chrome_error = None
         content = None
-        with ChromeBrowser(debugging_port, executable) as browser:
+        with ChromeBrowser(debugging_port, executable, profile_directory) as browser:
             try:
                 content = scanner.scan(browser, result, logger, options)
             except pychrome.TimeoutException:
