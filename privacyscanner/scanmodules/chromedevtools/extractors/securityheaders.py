@@ -24,6 +24,7 @@ class SecurityHeadersExtractor(Extractor):
         csp_value = None
         if 'content-security-policy' in headers:
             csp_value = self._parse_csp(headers['content-security-policy'])
+
         security_headers['Content-Security-Policy'] = csp_value
 
         xss_protection = None
